@@ -1,18 +1,23 @@
-import pygame
 from enum import IntEnum
+import os
+import pygame
 from pygame import Rect
 from pygine.entities import *
 from pygine.input import InputType, pressed
 from pygine.maths import Vector2
 from pygine.structures import Quadtree, Bin
 from pygine.transitions import Pinhole, TransitionType
+from pygine.triggers import OnButtonPressTrigger
 from pygine.utilities import Camera
 from random import randint
 
 
 class SceneType(IntEnum):
-    TOPDOWN = 0
-    FLOCKING = 1
+    TITLE = 0
+    MENU = 1
+    CUTSCENE = 2
+    LEVEL = 3
+    BOSS = 4
 
 
 class SceneManager:
@@ -40,7 +45,7 @@ class SceneManager:
         self.start_transition = False
 
         self.__initialize_scenes()
-        self.__set_starting_scene(SceneType.FLOCKING)
+        self.__set_starting_scene(SceneType.TITLE)
 
     def __add_scene(self, scene):
         self.__all_scenes.append(scene)
@@ -48,8 +53,11 @@ class SceneManager:
 
     def __initialize_scenes(self):
         self.__all_scenes = []
-        self.__add_scene(TopDown())
-        self.__add_scene(Flocking())
+        self.__add_scene(Title())
+        self.__add_scene(Menu())
+        self.__add_scene(Cutscene())
+        self.__add_scene(Level())
+        self.__add_scene(Boss())
 
     def __set_starting_scene(self, starting_scene_type):
         assert (len(self.__all_scenes) > 0), \
@@ -165,10 +173,11 @@ class Scene(object):
         self.scene_data = SceneDataRelay()
         self.scene_data.set_scene_bounds(self.scene_bounds)
 
-    def setup(self, entities_are_uniform, maximum_entity_dimension = 0):
+    def setup(self, entities_are_uniform, maximum_entity_dimension=0):
         self.entities_are_uniform = entities_are_uniform
         if self.entities_are_uniform:
-            self.optimal_bin_size = int(math.ceil(math.log(2, maximum_entity_dimension)))
+            self.optimal_bin_size = int(
+                math.ceil(math.log(2, maximum_entity_dimension)))
 
         self._reset()
         self._create_triggers()
@@ -188,7 +197,7 @@ class Scene(object):
         self.sprite_quad_tree = Quadtree(modified_bounds, 4)
         self.shape_quad_tree = Quadtree(modified_bounds, 4)
         self.entity_quad_tree = Quadtree(modified_bounds, 4)
-        self.entity_bin = Bin(modified_bounds, 5)
+        self.entity_bin = Bin(modified_bounds, 4)
         self.first_pass = True
 
     def relay_actor(self, actor):
@@ -219,13 +228,13 @@ class Scene(object):
                 self.shape_quad_tree.insert(self.shapes[i])
             self.first_pass = False
 
-        self.entity_quad_tree.clear()
-        if self.entities_are_uniform:
-            self.entity_bin.clear()
-        for i in range(len(self.entities)):
-            self.entity_quad_tree.insert(self.entities[i])
+            self.entity_quad_tree.clear()
             if self.entities_are_uniform:
-                self.entity_bin.insert(self.entities[i])
+                self.entity_bin.clear()
+            for i in range(len(self.entities)):
+                self.entity_quad_tree.insert(self.entities[i])
+                if self.entities_are_uniform:
+                    self.entity_bin.insert(self.entities[i])
 
     def __update_entities(self, delta_time):
         for i in range(len(self.entities)-1, -1, -1):
@@ -234,7 +243,7 @@ class Scene(object):
 
     def __update_triggers(self, delta_time):
         for t in self.triggers:
-            t.update(delta_time, self.entities, self.manager)
+            t.update(delta_time, self.scene_data, self.manager)
 
     def __update_camera(self):
         if self.actor != None:
@@ -267,42 +276,38 @@ class Scene(object):
 
         self.query_result = self.sprite_quad_tree.query(
             self.camera_viewport.bounds)
-        for s in self.query_result:
-            s.draw(surface, CameraType.DYNAMIC)
+        #for s in self.query_result:
+        #    s.draw(surface, CameraType.DYNAMIC)
 
         if globals.debugging:
             for t in self.triggers:
                 t.draw(surface, CameraType.DYNAMIC)
 
-        self.query_result = self.entity_quad_tree.query(self.camera_viewport.bounds)
+        self.query_result = self.entity_quad_tree.query(
+            self.camera_viewport.bounds)
         self.query_result.sort(key=lambda e: 1000 * (e.y + e.height) - e.x)
         for e in self.query_result:
             e.draw(surface)
 
-class TopDown(Scene):
+
+class Title(Scene):
     def __init__(self):
-        super(TopDown, self).__init__()
-        self.setup(False)   
-        self.relay_actor(Player(self.scene_bounds.width / 2, self.scene_bounds.height / 2)) 
+        super(Title, self).__init__()
+        self.setup(False)
 
     def _reset(self):
         self.set_scene_bounds(
-            Rect(0, 0, Camera.BOUNDS.width * 2, Camera.BOUNDS.height))
+            Rect(0, 0, Camera.BOUNDS.width, Camera.BOUNDS.height))
 
-        self.entities = []
-        for y in range(int(math.ceil(self.scene_bounds.height / 8))):
-            for x in range(int(math.ceil(self.scene_bounds.width / 52))):
-                if randint(1, 10) <= 1:
-                    self.entities.append(Block(x * 52, y * 8))
+        self.sprites = [
+            Sprite(0, 0, SpriteType.TITLE)
+        ]
+        self.sprites[0].set_location(
+            (self.scene_bounds.width - self.sprites[0].width) / 2,
+            (self.scene_bounds.height - self.sprites[0].height) / 2
+        )
 
-        self.sprites = []
-        for y in range(int(math.ceil(self.scene_bounds.height / 32))):
-            for x in range(int(math.ceil(self.scene_bounds.width / 32))):
-                if randint(1, 10) <= 3:
-                    self.sprites.append(Sprite(x * 32, y * 32 - 8, SpriteType.TILE))
-
-        self.shapes = []
-        self.shapes.append(
+        self.shapes = [
             Rectangle(
                 0,
                 0,
@@ -310,29 +315,145 @@ class TopDown(Scene):
                 self.scene_bounds.height,
                 Color.TEAL
             )
-        )
+        ]
+
+    def _create_triggers(self):
+        self.triggers = [
+            OnButtonPressTrigger(
+                InputType.B,
+                Vector2(
+                    self.scene_bounds.width / 2,
+                    self.scene_bounds.height / 2
+                ),
+                SceneType.LEVEL
+            )
+        ]
+
+
+class Menu(Scene):
+    def __init__(self):
+        super(Menu, self).__init__()
+        self.setup(False)
+
+    def _reset(self):
+        self.set_scene_bounds(
+            Rect(0, 0, Camera.BOUNDS.width, Camera.BOUNDS.height))
+
+        self.sprites = []
+
+        self.shapes = [
+            Rectangle(
+                0,
+                0,
+                self.scene_bounds.width,
+                self.scene_bounds.height,
+                Color.BLACK
+            )
+        ]
 
     def _create_triggers(self):
         self.triggers = []
 
 
-class Flocking(Scene):
+class Cutscene(Scene):
     def __init__(self):
-        super(Flocking, self).__init__()
-        self.setup(True, 16)  
+        super(Cutscene, self).__init__()
+        self.setup(False)
 
     def _reset(self):
         self.set_scene_bounds(
             Rect(0, 0, Camera.BOUNDS.width, Camera.BOUNDS.height))
-        self.entities = []
 
-        for i in range(0, 100):
-            self.entities.append(
-                Boid(randint(8, self.scene_bounds.width), randint(8, self.scene_bounds.height)))
+        self.sprites = []
 
-        self.shapes = []
-        self.shapes.append(Rectangle(
-            0, 0, self.scene_bounds.width, self.scene_bounds.height, Color.BLACK))
+        self.shapes = [
+            Rectangle(
+                0,
+                0,
+                self.scene_bounds.width,
+                self.scene_bounds.height,
+                Color.BLACK
+            )
+        ]
+
+    def _create_triggers(self):
+        self.triggers = []
+
+
+class Level(Scene):
+    def __init__(self):
+        super(Level, self).__init__()
+        self.setup(True, 16)
+        self.relay_actor(Player(self.scene_bounds.width / 2, self.scene_bounds.height / 2))
+
+    def _reset(self):
+        self.set_scene_bounds(
+            Rect(0, 0, Camera.BOUNDS.width, Camera.BOUNDS.height))
+
+        self.sprites = []
+
+        self.shapes = [
+            Rectangle(
+                0,
+                0,
+                self.scene_bounds.width,
+                self.scene_bounds.height,
+                Color.SKY_BLUE
+            )
+        ]
+
+        self.__load_level("0")
+
+    def _create_triggers(self):
+        self.triggers = []
+
+    def __load_level(self, level):
+        path = os.path.dirname(os.path.abspath(__file__))
+
+        file = open(
+            path + "/assets/levels/" + level + "_sprites.csv",
+            "r"
+        )
+        for y in range(15):
+            row = file.readline().split(",")
+            for x in range(20):
+                column = row[x]
+                if column.strip() != "-1":
+                    self.sprites.append(Sprite(x * 16, y * 16, SpriteType.SOLID_BLOCK))
+
+
+        file = open(
+            path + "/assets/levels/" + level + "_blocks.csv",
+            "r"
+        )
+        for y in range(15):
+            row = file.readline().split(",")
+            for x in range(20):
+                column = row[x]
+                if column.strip() != "-1":
+                    self.entities.append(Block(x * 16, y * 16))
+
+
+class Boss(Scene):
+    def __init__(self):
+        super(Boss, self).__init__()
+        self.setup(False)
+
+    def _reset(self):
+        self.set_scene_bounds(
+            Rect(0, 0, Camera.BOUNDS.width, Camera.BOUNDS.height))
+
+        self.sprites = []
+
+        self.shapes = [
+            Rectangle(
+                0,
+                0,
+                self.scene_bounds.width,
+                self.scene_bounds.height,
+                Color.BLACK
+            )
+        ]
 
     def _create_triggers(self):
         self.triggers = []
