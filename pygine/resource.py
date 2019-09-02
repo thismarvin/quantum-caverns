@@ -30,9 +30,14 @@ def load_content():
 class SpriteType(IntEnum):
     NONE = 0
     TEXT = 1
-    PLAYER = 2
-    BLOCK = 3
-    TILE = 4
+
+    SOLID_BLOCK = 3
+    Q_BLOCK_0 = 4
+    Q_BLOCK_1 = 5
+
+    PLAYER = 6
+
+    TITLE = 7
 
 
 class Sprite(PygineObject):
@@ -73,12 +78,18 @@ class Sprite(PygineObject):
         elif (self.type == SpriteType.TEXT):
             self.__sprite_setup(0, 0, 8, 8)
 
+        elif (self.type == SpriteType.SOLID_BLOCK):
+            self.__sprite_setup(0, 32, 16, 16)
+        elif (self.type == SpriteType.Q_BLOCK_0):
+            self.__sprite_setup(0, 48, 16, 16)
+        elif (self.type == SpriteType.Q_BLOCK_1):
+            self.__sprite_setup(16, 48, 16, 16)
+
         elif (self.type == SpriteType.PLAYER):
-            self.__sprite_setup(0, 0, 32, 32)
-        elif (self.type == SpriteType.BLOCK):
-            self.__sprite_setup(0, 32, 64, 32)
-        elif (self.type == SpriteType.TILE):
-            self.__sprite_setup(32, 0, 32, 32)
+            self.__sprite_setup(0, 80, 32, 48)
+
+        elif (self.type == SpriteType.TITLE):
+            self.__sprite_setup(0, 0, 64, 32)
 
         self.__apply_changes_to_sprite()
 
