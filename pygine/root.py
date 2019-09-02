@@ -27,13 +27,13 @@ class Game:
         self.__initialize_pygame()
 
         self.__setup_window(
-            320 * 2, 180 * 2,
+            320 * 2, 240 * 2,
             60,
             False,
             Orientaion.LANDSCAPE,
             "Pygine"
         )
-        self.__setup_pixel_scene(320, 180)
+        self.__setup_pixel_scene(320, 240)
         self.__setup_cameras()
 
         load_content()
