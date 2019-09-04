@@ -31,7 +31,7 @@ class Game:
             60,
             False,
             Orientaion.LANDSCAPE,
-            "Pygine"
+            "Quantum Caverns"
         )
         self.__setup_pixel_scene(320, 240)
         self.__setup_cameras()
@@ -176,7 +176,7 @@ class Game:
 
         if globals.debugging:
             self.fps_counter.draw(self.window, CameraType.STATIC)
-
+        self.fps_counter.draw(self.window, CameraType.STATIC)
         self.static_camera.draw(self.window)
         pygame.display.update()
 
