@@ -276,8 +276,8 @@ class Scene(object):
 
         self.query_result = self.sprite_quad_tree.query(
             self.camera_viewport.bounds)
-        #for s in self.query_result:
-        #    s.draw(surface, CameraType.DYNAMIC)
+        for s in self.query_result:
+            s.draw(surface, CameraType.DYNAMIC)
 
         if globals.debugging:
             for t in self.triggers:
@@ -285,9 +285,12 @@ class Scene(object):
 
         self.query_result = self.entity_quad_tree.query(
             self.camera_viewport.bounds)
-        self.query_result.sort(key=lambda e: 1000 * (e.y + e.height) - e.x)
+
         for e in self.query_result:
             e.draw(surface)
+
+        if self.actor != None:
+            self.actor.draw(surface)
 
 
 class Title(Scene):
@@ -320,7 +323,7 @@ class Title(Scene):
     def _create_triggers(self):
         self.triggers = [
             OnButtonPressTrigger(
-                InputType.B,
+                InputType.A,
                 Vector2(
                     self.scene_bounds.width / 2,
                     self.scene_bounds.height / 2
@@ -384,11 +387,11 @@ class Level(Scene):
     def __init__(self):
         super(Level, self).__init__()
         self.setup(True, 16)
-        self.relay_actor(Player(self.scene_bounds.width / 2, self.scene_bounds.height / 2))
+        self.relay_actor(Player(1 * 16, 10 * 16))
 
     def _reset(self):
         self.set_scene_bounds(
-            Rect(0, 0, Camera.BOUNDS.width, Camera.BOUNDS.height))
+            Rect(0, 0, Camera.BOUNDS.width * 2, Camera.BOUNDS.height))
 
         self.sprites = []
 
@@ -398,7 +401,7 @@ class Level(Scene):
                 0,
                 self.scene_bounds.width,
                 self.scene_bounds.height,
-                Color.SKY_BLUE
+                Color.BLACK
             )
         ]
 
@@ -411,27 +414,33 @@ class Level(Scene):
         path = os.path.dirname(os.path.abspath(__file__))
 
         file = open(
-            path + "/assets/levels/" + level + "_sprites.csv",
-            "r"
+        path + "/assets/levels/" + level + "_sprites.csv",
+        "r"
         )
         for y in range(15):
             row = file.readline().split(",")
-            for x in range(20):
-                column = row[x]
-                if column.strip() != "-1":
-                    self.sprites.append(Sprite(x * 16, y * 16, SpriteType.SOLID_BLOCK))
-
+            for x in range(40):
+                column = row[x].strip()
+                if column != "-1":
+                    self.sprites.append(Sprite(x * 16, y * 16, SpriteType.NONE))
+                    self.sprites[len(self.sprites) - 1].set_frame(int(column), 16)
 
         file = open(
             path + "/assets/levels/" + level + "_blocks.csv",
             "r"
         )
+
         for y in range(15):
             row = file.readline().split(",")
-            for x in range(20):
-                column = row[x]
-                if column.strip() != "-1":
-                    self.entities.append(Block(x * 16, y * 16))
+            for x in range(20 + 20):
+                column = row[x].strip()
+                if column != "-1":
+                    if column == "36":
+                        self.entities.append(Block(x * 16, y * 16))
+                    elif column == "80":
+                        self.entities.append(QBlock(x*16, y*16, 0))
+                    elif column == "81":
+                        self.entities.append(QBlock(x*16, y*16, 1))
 
 
 class Boss(Scene):
