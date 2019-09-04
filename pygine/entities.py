@@ -110,6 +110,8 @@ class Player(Actor):
     def __init__(self, x, y):
         super(Player, self).__init__(x, y, 12, 28, 100)
         self.sprite = Sprite(self.x - 10, self.y - 16, SpriteType.PLAYER)
+        self.walk_animation = Animation(6, 6, 100)
+        self.direction = Direction.NONE
         self.query_result = None
 
         self.default_jump_height = 16 * 4
@@ -141,12 +143,23 @@ class Player(Actor):
     def _update_input(self, delta_time):
         if pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x = -1 * self.move_speed
+            self.sprite.set_frame(self.walk_animation.current_frame, 6)
+            self.direction = Direction.LEFT
 
         if pressing(InputType.RIGHT) and not pressing(InputType.LEFT):
             self.velocity.x = 1 * self.move_speed
+            self.sprite.set_frame(self.walk_animation.current_frame, 6)
+            self.direction = Direction.RIGHT
 
         if not pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x = 0
+            self.sprite.set_frame(0, 6)
+
+        if self.direction == Direction.LEFT:
+            self.sprite.vertical_flip(True)
+        elif self.direction == Direction.RIGHT:
+            self.sprite.vertical_flip(False)
+
 
         if pressed(InputType.A) and self.grounded and not self.jumping:
             self.__jump(delta_time)
@@ -230,12 +243,16 @@ class Player(Actor):
             if isinstance(e, QBlock):
                 e.toggle()
 
+    def update_animation(self, delta_time):
+        self.walk_animation.update(delta_time)
+
     def update(self, delta_time, scene_data):
-        self._calculate_scaled_speed(delta_time)
-        self._update_input(delta_time)
+        self._calculate_scaled_speed(delta_time)        
+        self._update_input(delta_time)        
         self._apply_force(delta_time)
         self._update_collision_rectangles()
         self._collision(scene_data)
+        self.update_animation(delta_time)
 
     def draw(self, surface):
         if globals.debugging:
