@@ -62,6 +62,18 @@ class Sprite(PygineObject):
         self.__sprite_y += increment
         self.__apply_changes_to_sprite()
 
+    def flip_horizontally(self, flip):
+        if flip:
+            self.image = pygame.transform.flip(self.image, True, False)
+        else:
+            self.image = pygame.transform.flip(self.image, False, False)
+
+    def flip_vertically(self, flip):
+        if flip:
+            self.image = pygame.transform.flip(self.image, False, True)
+        else:
+            self.image = pygame.transform.flip(self.image, False, False)
+
     def __sprite_setup(self, sprite_x=0, sprite_y=0, width=0, height=0):
         self.__original_sprite_x = sprite_x
         self.__original_sprite_y = sprite_y
