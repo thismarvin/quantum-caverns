@@ -7,7 +7,7 @@ from pygine.geometry import Rectangle, Circle
 from pygine import globals
 from pygine.input import InputType, pressed, pressing
 from pygine.maths import Vector2
-from pygine.resource import Sprite, SpriteType
+from pygine.resource import Animation, Sprite, SpriteType
 from pygine.utilities import CameraType, Color
 from random import randint
 
@@ -112,31 +112,33 @@ class Player(Actor):
         self.sprite = Sprite(self.x - 10, self.y - 16, SpriteType.PLAYER)
         self.query_result = None
 
-        self.gravity = 9
-        self.jump_height = 300
+        self.default_jump_height = 16 * 4
+        self.jump_duration = 1
+
+        self.jump_initial_velocity = 0
+        self.gravity = 0
+
         self.grounded = False
         self.jumping = False
+        self.attempt_block_shift = False
+
+    def _calculate_scaled_speed(self, delta_time):
+        super(Player, self)._calculate_scaled_speed(delta_time)
+
+        time = 1 / delta_time * self.jump_duration
+        self.jump_initial_velocity = (self.default_jump_height * time) / (time**2 / 4)
+        self.gravity = (2 * self.default_jump_height) / (time**2 / 4)
 
     def set_location(self, x, y):
         super(Player, self).set_location(x, y)
         self.sprite.set_location(self.x - 10, self.y - 16)
 
     def _apply_force(self, delta_time):
-
-        self.velocity.y += self.gravity * delta_time
+        self.velocity.y += self.gravity
 
         self.set_location(self.x + self.velocity.x, self.y + self.velocity.y)
 
     def _update_input(self, delta_time):
-        #if pressing(InputType.UP) and not pressing(InputType.DOWN):
-        #    self.velocity.y = -1 * self.move_speed
-#
-        #if pressing(InputType.DOWN) and not pressing(InputType.UP):
-        #    self.velocity.y = 1 * self.move_speed
-#
-        #if not pressing(InputType.UP) and not pressing(InputType.DOWN):
-        #    self.velocity.y = 0
-
         if pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x = -1 * self.move_speed
 
@@ -146,32 +148,34 @@ class Player(Actor):
         if not pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x = 0
 
-        if pressing(InputType.A) and self.grounded and not self.jumping:
+        if pressed(InputType.A) and self.grounded and not self.jumping:
             self.__jump(delta_time)
             self.jumping = True
-        
-        if self.jumping and self.velocity.y < -self.jump_height / 2 * delta_time and not pressing(InputType.A):
-            self.velocity.y = -self.jump_height / 2 * delta_time
+
+        if self.jumping and self.velocity.y < -self.jump_initial_velocity / 2 and not pressing(InputType.A):
+            self.velocity.y = -self.jump_initial_velocity / 2
             self.jumping = False
+
+        if pressed(InputType.X):
+            self.attempt_block_shift = True
 
     def __rectanlge_collision_logic(self, entity):
         # Bottom
-        if self.collision_rectangles[0].colliderect(entity.bounds) and self.velocity.y < 0:
+        if self.velocity.y < 0 and self.collision_rectangles[0].colliderect(entity.bounds):
             self.set_location(self.x, entity.bounds.bottom)
             self.velocity.y = 0
         # Top
-        if self.collision_rectangles[1].colliderect(entity.bounds) and self.velocity.y > 0:
+        if self.velocity.y > 0 and self.collision_rectangles[1].colliderect(entity.bounds):
             self.set_location(self.x, entity.bounds.top - self.bounds.height)
-
             self.grounded = True
             self.jumping = False
             self.velocity.y = 0
 
         # Right
-        if self.collision_rectangles[2].colliderect(entity.bounds) and self.velocity.x < 0:
+        if self.velocity.x < 0 and self.collision_rectangles[2].colliderect(entity.bounds):
             self.set_location(entity.bounds.right, self.y)
         # Left
-        if self.collision_rectangles[3].colliderect(entity.bounds) and self.velocity.x > 0:
+        if self.velocity.x > 0 and self.collision_rectangles[3].colliderect(entity.bounds):
             self.set_location(entity.bounds.left - self.bounds.width, self.y)
 
     def _collision(self, scene_data):
@@ -180,14 +184,20 @@ class Player(Actor):
                 e.set_color(Color.WHITE)
 
         self.area = Rect(
-           self.x - 16,
-           self.y - 16,
-           self.width + 16 * 2,
-           self.height + 16 * 2
+            self.x - 16,
+            self.y - 16,
+            self.width + 16 * 2,
+            self.height + 16 * 2
         )
 
         self.grounded = False
-        self.query_result = scene_data.entity_bin.query(self.area)
+        self.query_result = scene_data.entity_quad_tree.query(self.area)
+
+        if self.attempt_block_shift:
+            self.__shift_blocks(scene_data)
+
+        self.attempt_block_shift = False
+
         for e in self.query_result:
             if e is self:
                 continue
@@ -199,9 +209,26 @@ class Player(Actor):
                 self.__rectanlge_collision_logic(e)
                 self._update_collision_rectangles()
 
+            if isinstance(e, QBlock):
+                if e.active:
+                    self.__rectanlge_collision_logic(e)
+                    self._update_collision_rectangles()
 
     def __jump(self, delta_time):
-        self.velocity.y = -self.jump_height * delta_time        
+        self.velocity.y = -self.jump_initial_velocity
+
+    def __shift_blocks(self, scene_data):
+        for e in self.query_result:
+            if e is self:
+                continue
+
+            if isinstance(e, QBlock):
+                if self.bounds.colliderect(e.bounds):
+                    return
+
+        for e in scene_data.entities:
+            if isinstance(e, QBlock):
+                e.toggle()
 
     def update(self, delta_time, scene_data):
         self._calculate_scaled_speed(delta_time)
@@ -234,7 +261,37 @@ class Player(Actor):
 class Block(Entity):
     def __init__(self, x, y):
         super(Block, self).__init__(x, y, 16, 16)
-        self.sprite = Sprite(self.x, self.y, SpriteType.SOLID_BLOCK)
+        #self.sprite = Sprite(self.x, self.y, SpriteType.SOLID_BLOCK)
+
+    def update(self, delta_time, scene_data):
+        pass
+
+    def draw(self, surface):
+        if globals.debugging:
+            draw_rectangle(surface, self.bounds,
+                           CameraType.DYNAMIC, self.color)
+        else:
+            pass
+            #self.sprite.draw(surface, CameraType.DYNAMIC)
+
+
+class QBlock(Entity):
+    def __init__(self, x, y, type):
+        super(QBlock, self).__init__(x, y, 16, 16)
+        self.active = False
+        if type == 0:
+            self.sprite = Sprite(self.x, self.y, SpriteType.Q_BLOCK_0)
+        else:
+            self.sprite = Sprite(self.x, self.y, SpriteType.Q_BLOCK_1)
+            self.sprite.increment_sprite_y(16)
+            self.active = True
+
+    def toggle(self):
+        self.active = not self.active
+        if self.active:
+            self.sprite.increment_sprite_y(16)
+        else:
+            self.sprite.increment_sprite_y(-16)
 
     def update(self, delta_time, scene_data):
         pass
@@ -245,5 +302,3 @@ class Block(Entity):
                            CameraType.DYNAMIC, self.color)
         else:
             self.sprite.draw(surface, CameraType.DYNAMIC)
-
-
