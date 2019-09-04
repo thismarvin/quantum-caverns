@@ -11,7 +11,6 @@ from pygine.utilities import Timer
 SPRITE_SHEET = None
 TEXT_SHEET = None
 
-
 def load_content():
     global SPRITE_SHEET
     global TEXT_SHEET
@@ -73,23 +72,24 @@ class Sprite(PygineObject):
 
     def __load_sprite(self):
         if self.type == SpriteType.NONE:
-            self.__sprite_setup(1023, 1023, 1, 1)
+            self.__sprite_setup(0, 0, 16, 16)
 
         elif (self.type == SpriteType.TEXT):
             self.__sprite_setup(0, 0, 8, 8)
 
         elif (self.type == SpriteType.SOLID_BLOCK):
-            self.__sprite_setup(0, 32, 16, 16)
+            self.__sprite_setup(64, 32, 16, 16)
         elif (self.type == SpriteType.Q_BLOCK_0):
-            self.__sprite_setup(0, 48, 16, 16)
+            self.__sprite_setup(0, 80, 16, 16)
         elif (self.type == SpriteType.Q_BLOCK_1):
-            self.__sprite_setup(16, 48, 16, 16)
+            self.__sprite_setup(16, 80, 16, 16)
 
         elif (self.type == SpriteType.PLAYER):
-            self.__sprite_setup(0, 80, 32, 48)
+            self.__sprite_setup(0, 208, 32, 48)
 
         elif (self.type == SpriteType.TITLE):
             self.__sprite_setup(0, 0, 64, 32)
+
 
         self.__apply_changes_to_sprite()
 
@@ -101,9 +101,11 @@ class Sprite(PygineObject):
                             (self.__sprite_x, self.__sprite_y, self.width, self.height))
         else:
             self.image.blit(SPRITE_SHEET, (0, 0),
-                            (self.__sprite_x, self.__sprite_y, self.width, self.height))
+                            (self.__sprite_x, self.__sprite_y, self.width, self.height))    
 
     def draw(self, surface, camera_type):
+
+        self.image.convert()
         draw_image(surface, self.image, self.bounds, camera_type)
 
 
