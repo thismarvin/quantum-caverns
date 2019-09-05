@@ -128,8 +128,14 @@ class Player(Actor):
         super(Player, self)._calculate_scaled_speed(delta_time)
 
         time = 1 / delta_time * self.jump_duration
-        self.jump_initial_velocity = (self.default_jump_height * time) / (time**2 / 4)
-        self.gravity = (2 * self.default_jump_height) / (time**2 / 4)
+        #self.jump_initial_velocity = (self.default_jump_height * time) / (time**2 / 4)
+        #self.gravity = (2 * self.default_jump_height) / (time**2 / 4)
+        self.jump_initial_velocity = 4 * self.default_jump_height / time
+        self.gravity = 8 * self.default_jump_height / time**2
+        #self.jump_initial_velocity = self.default_jump_height / time
+        #self.gravity = self.default_jump_height / time**2
+        #print(self.jump_initial_velocity)
+        #print(self.gravity)
 
     def set_location(self, x, y):
         super(Player, self).set_location(x, y)
@@ -143,31 +149,39 @@ class Player(Actor):
     def _update_input(self, delta_time):
         if pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x = -1 * self.move_speed
-            self.sprite.set_frame(self.walk_animation.current_frame, 6)
+            if not self.jumping:
+                self.sprite.set_frame(self.walk_animation.current_frame, 6)
             self.direction = Direction.LEFT
 
         if pressing(InputType.RIGHT) and not pressing(InputType.LEFT):
             self.velocity.x = 1 * self.move_speed
-            self.sprite.set_frame(self.walk_animation.current_frame, 6)
+            if not self.jumping:
+                self.sprite.set_frame(self.walk_animation.current_frame, 6)
             self.direction = Direction.RIGHT
 
         if not pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x = 0
             self.sprite.set_frame(0, 6)
 
+
+        if not self.grounded:
+            self.sprite.set_frame(6, 8)
+
         if self.direction == Direction.LEFT:
-            self.sprite.vertical_flip(True)
+            self.sprite.flip_horizontally(True)
         elif self.direction == Direction.RIGHT:
-            self.sprite.vertical_flip(False)
+            self.sprite.flip_horizontally(False)
 
 
         if pressed(InputType.A) and self.grounded and not self.jumping:
             self.__jump(delta_time)
-            self.jumping = True
+            self.jumping = True        
 
         if self.jumping and self.velocity.y < -self.jump_initial_velocity / 2 and not pressing(InputType.A):
             self.velocity.y = -self.jump_initial_velocity / 2
             self.jumping = False
+
+
 
         if pressed(InputType.X):
             self.attempt_block_shift = True
