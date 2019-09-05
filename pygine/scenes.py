@@ -401,7 +401,7 @@ class Level(Scene):
                 0,
                 self.scene_bounds.width,
                 self.scene_bounds.height,
-                Color.BLACK
+                Color.DARK_BLUE
             )
         ]
 
@@ -421,7 +421,7 @@ class Level(Scene):
             row = file.readline().split(",")
             for x in range(40):
                 column = row[x].strip()
-                if column != "-1":
+                if column != "-1" and column != "49":
                     self.sprites.append(Sprite(x * 16, y * 16, SpriteType.NONE))
                     self.sprites[len(self.sprites) - 1].set_frame(int(column), 16)
 
