@@ -60,16 +60,16 @@ class Kinetic(Entity):
         self.collision_width = 0
 
     def _update_collision_rectangles(self):
-        self.collision_width = 2
+        self.collision_width = 3
         self.collision_rectangles = [
             Rect(self.x + self.collision_width, self.y - self.collision_width,
                  self.width - self.collision_width * 2, self.collision_width),
             Rect(self.x + self.collision_width, self.y + self.height, self.width -
                  self.collision_width * 2, self.collision_width),
-            Rect(self.x - self.collision_width, self.y + self.collision_width,
-                 self.collision_width, self.height - self.collision_width * 2),
-            Rect(self.x + self.width, self.y + self.collision_width,
-                 self.collision_width, self.height - self.collision_width * 2)
+            Rect(self.x - self.collision_width, self.y + self.collision_width * 2,
+                 self.collision_width, self.height - self.collision_width * 2 * 2),
+            Rect(self.x + self.width, self.y + self.collision_width * 2,
+                 self.collision_width, self.height - self.collision_width * 2 * 2)
         ]
 
     def _calculate_scaled_speed(self, delta_time):
@@ -116,9 +116,15 @@ class Player(Actor):
 
         self.default_jump_height = 16 * 4
         self.jump_duration = 1
+        self.default_run_acceleration = 10
+        self.default_ground_friction = 7
+        self.default_air_friction = 1
 
         self.jump_initial_velocity = 0
         self.gravity = 0
+        self.lateral_acceleration = 0
+        self.ground_friction = 0
+        self.air_friction = 0
 
         self.grounded = False
         self.jumping = False
@@ -128,14 +134,13 @@ class Player(Actor):
         super(Player, self)._calculate_scaled_speed(delta_time)
 
         time = 1 / delta_time * self.jump_duration
-        #self.jump_initial_velocity = (self.default_jump_height * time) / (time**2 / 4)
-        #self.gravity = (2 * self.default_jump_height) / (time**2 / 4)
+
         self.jump_initial_velocity = 4 * self.default_jump_height / time
         self.gravity = 8 * self.default_jump_height / time**2
-        #self.jump_initial_velocity = self.default_jump_height / time
-        #self.gravity = self.default_jump_height / time**2
-        #print(self.jump_initial_velocity)
-        #print(self.gravity)
+
+        self.lateral_acceleration = self.default_run_acceleration * delta_time
+        self.ground_friction = self.default_ground_friction * delta_time
+        self.air_friction = self.default_air_friction * delta_time
 
     def set_location(self, x, y):
         super(Player, self).set_location(x, y)
@@ -148,19 +153,29 @@ class Player(Actor):
 
     def _update_input(self, delta_time):
         if pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
-            self.velocity.x = -1 * self.move_speed
+            self.velocity.x -= self.lateral_acceleration
+            if self.velocity.x < -self.move_speed:
+                self.velocity.x = -self.move_speed
+
             if not self.jumping:
                 self.sprite.set_frame(self.walk_animation.current_frame, 6)
             self.direction = Direction.LEFT
 
         if pressing(InputType.RIGHT) and not pressing(InputType.LEFT):
-            self.velocity.x = 1 * self.move_speed
+            self.velocity.x += self.lateral_acceleration
+            if self.velocity.x > self.move_speed:
+                self.velocity.x = self.move_speed
+
             if not self.jumping:
                 self.sprite.set_frame(self.walk_animation.current_frame, 6)
             self.direction = Direction.RIGHT
 
         if not pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
-            self.velocity.x = 0
+            if self.grounded:
+                self.velocity.lerp(Vector2(0, self.velocity.y), self.ground_friction)
+            else:
+                self.velocity.lerp(Vector2(0, self.velocity.y), self.air_friction)
+
             self.sprite.set_frame(0, 6)
 
 
@@ -201,9 +216,11 @@ class Player(Actor):
         # Right
         if self.velocity.x < 0 and self.collision_rectangles[2].colliderect(entity.bounds):
             self.set_location(entity.bounds.right, self.y)
+            self.velocity.x = 0
         # Left
         if self.velocity.x > 0 and self.collision_rectangles[3].colliderect(entity.bounds):
             self.set_location(entity.bounds.left - self.bounds.width, self.y)
+            self.velocity.x = 0
 
     def _collision(self, scene_data):
         if (globals.debugging):
