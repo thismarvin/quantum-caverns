@@ -55,13 +55,18 @@ class Vector2:
             self.divide(magnitude)
 
     def set_magnitude(self, magnitude):
-        "Set the length of the vector to magnitude"
+        "Set the length of the vector to magnitude."
         self.normalize()
         self.x *= magnitude
         self.y *= magnitude
 
     def limit(self, max_force):
-        "Limit the length of the vector to max_force"
+        "Limit the length of the vector to max_force."
         if self.length() ** 2 > max_force ** 2:
             self.normalize()
             self.set_magnitude(max_force)
+
+    def lerp(self, target, amount):
+        "A linear interpolation between this vector and target vector by a given amount."
+        self.x = (1 - amount) * self.x + amount * target.x
+        self.y = (1 - amount) * self.y + amount * target.y
