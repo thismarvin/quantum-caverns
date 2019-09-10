@@ -6,6 +6,7 @@ from pygine.entities import *
 from pygine.input import InputType, pressed
 from pygine.maths import Vector2
 from pygine.structures import Quadtree, Bin
+from pygine.sounds import play_song
 from pygine.transitions import Pinhole, TransitionType
 from pygine.triggers import OnButtonPressTrigger
 from pygine.utilities import Camera
@@ -63,7 +64,7 @@ class SceneManager:
         assert (len(self.__all_scenes) > 0), \
             "It looks like you never initialized all the scenes! Make sure to setup and call __initialize_scenes()"
 
-        self.__current_scene = self.__all_scenes[int(starting_scene_type)]
+        self.__current_scene = self.__all_scenes[int(starting_scene_type)]        
 
     def __setup_transition(self):
         if self.__previous_scene.leave_transition_type == TransitionType.PINHOLE_CLOSE:
@@ -76,6 +77,7 @@ class SceneManager:
 
     def __change_scenes(self):
         self.__current_scene = self.__next_scene
+        play_song(self.__current_scene.song)
 
     def __update_input(self, delta_time):
         if pressed(InputType.RESET):
@@ -297,6 +299,7 @@ class Title(Scene):
     def __init__(self):
         super(Title, self).__init__()
         self.setup(False)
+        self.song = ""
 
     def _reset(self):
         self.set_scene_bounds(
@@ -337,6 +340,7 @@ class Menu(Scene):
     def __init__(self):
         super(Menu, self).__init__()
         self.setup(False)
+        self.song = ""
 
     def _reset(self):
         self.set_scene_bounds(
@@ -362,6 +366,7 @@ class Cutscene(Scene):
     def __init__(self):
         super(Cutscene, self).__init__()
         self.setup(False)
+        self.song = ""
 
     def _reset(self):
         self.set_scene_bounds(
@@ -388,6 +393,7 @@ class Level(Scene):
         super(Level, self).__init__()
         self.setup(True, 16)
         self.relay_actor(Player(1 * 16, 10 * 16))
+        self.song = "lapidary.wav"
 
     def _reset(self):
         self.set_scene_bounds(
@@ -447,6 +453,7 @@ class Boss(Scene):
     def __init__(self):
         super(Boss, self).__init__()
         self.setup(False)
+        self.song = ""
 
     def _reset(self):
         self.set_scene_bounds(
