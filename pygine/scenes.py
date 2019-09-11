@@ -397,6 +397,7 @@ class Level(Scene):
 
         self.song = "lapidary.wav"
 
+        self.background_layer = Layer(0, False)
         self.sprite_layer = None
         self.setup(True, 16)            
 
@@ -406,15 +407,7 @@ class Level(Scene):
 
         self.sprites = []
 
-        self.shapes = [
-            Rectangle(
-                0,
-                0,
-                self.scene_bounds.width,
-                self.scene_bounds.height,
-                Color.SKY_BLUE
-            )
-        ]
+        self.shapes = []
 
         self.entities = []
         
@@ -466,10 +459,7 @@ class Level(Scene):
             self._reset()
 
     def draw(self, surface):
-
-        for s in self.shapes:
-            s.draw(surface, CameraType.DYNAMIC)
-
+        self.background_layer.draw(surface, CameraType.STATIC)
         self.sprite_layer.draw(surface, CameraType.DYNAMIC)
 
         if globals.debugging:
@@ -478,7 +468,6 @@ class Level(Scene):
 
         self.query_result = self.entity_quad_tree.query(
             self.camera_viewport.bounds)
-
         for e in self.query_result:
             e.draw(surface)
 
