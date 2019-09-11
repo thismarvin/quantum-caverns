@@ -391,9 +391,13 @@ class Cutscene(Scene):
 class Level(Scene):
     def __init__(self):
         super(Level, self).__init__()
-        self.setup(True, 16)
-        self.relay_actor(Player(1 * 16, 10 * 16))
+
+        self.total_levels = 0
+        self.__calculate_total_levels()
+
         self.song = "lapidary.wav"
+
+        self.setup(True, 16)            
 
     def _reset(self):
         self.set_scene_bounds(
@@ -411,10 +415,24 @@ class Level(Scene):
             )
         ]
 
-        self.__load_level("0")
+        self.entities = []
+        
+        self.__load_random_level()
 
     def _create_triggers(self):
         self.triggers = []
+
+    def __calculate_total_levels(self):
+        self.total_levels  = 0
+        path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
+        for f in os.listdir(path):
+            self.total_levels += 1
+        self.total_levels /= 2
+        self.total_levels = int(self.total_levels)
+        #print("Loaded " + str(self.total_levels) + " levels.")
+
+    def __load_random_level(self):
+        self.__load_level(str(randint(0, self.total_levels - 1)))
 
     def __load_level(self, level):
         path = os.path.dirname(os.path.abspath(__file__))
@@ -441,13 +459,20 @@ class Level(Scene):
             for x in range(20 + 20):
                 column = row[x].strip()
                 if column != "-1":
-                    if column == "36":
+                    if column == "35":
+                        self.relay_actor(Player(x * 16 + 4, y * 16))
+                    elif column == "36":
                         self.entities.append(Block(x * 16, y * 16))
                     elif column == "80":
                         self.entities.append(QBlock(x*16, y*16, 0))
                     elif column == "81":
                         self.entities.append(QBlock(x*16, y*16, 1))
 
+    def update(self, delta_time):
+        super(Level, self).update(delta_time)
+        
+        if self.actor.x + self.actor.width > self.scene_bounds.width:
+            self._reset()
 
 class Boss(Scene):
     def __init__(self):
