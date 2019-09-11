@@ -184,6 +184,9 @@ class Player(Actor):
                 self.velocity.lerp(
                     Vector2(0, self.velocity.y), self.air_friction)
 
+            if self.velocity.x > -0.1 and self.velocity.x < 0.1:
+                self.velocity.x = 0
+
             self.sprite.set_frame(0, 6)
 
         if not self.grounded:
@@ -198,7 +201,7 @@ class Player(Actor):
                 if pressing(InputType.DOWN):
                     self.sprite.set_frame(9, 6)
 
-
+        print(self.velocity.x)
         if self.direction == Direction.LEFT:
             self.sprite.flip_horizontally(True)
         elif self.direction == Direction.RIGHT:
