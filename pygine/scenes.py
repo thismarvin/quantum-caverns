@@ -5,6 +5,7 @@ from pygame import Rect
 from pygine.entities import *
 from pygine.input import InputType, pressed
 from pygine.maths import Vector2
+from pygine.resource import Layer
 from pygine.structures import Quadtree, Bin
 from pygine.sounds import play_song
 from pygine.transitions import Pinhole, TransitionType
@@ -241,7 +242,6 @@ class Scene(object):
     def __update_entities(self, delta_time):
         for i in range(len(self.entities)-1, -1, -1):
             self.entities[i].update(delta_time, self.scene_data)
-        #self.entities.sort(key=lambda e: 1000 * (e.y + e.height) - e.x)
 
     def __update_triggers(self, delta_time):
         for t in self.triggers:
@@ -397,6 +397,7 @@ class Level(Scene):
 
         self.song = "lapidary.wav"
 
+        self.sprite_layer = None
         self.setup(True, 16)            
 
     def _reset(self):
@@ -411,7 +412,7 @@ class Level(Scene):
                 0,
                 self.scene_bounds.width,
                 self.scene_bounds.height,
-                Color.DARK_BLUE
+                Color.SKY_BLUE
             )
         ]
 
@@ -432,26 +433,16 @@ class Level(Scene):
         #print("Loaded " + str(self.total_levels) + " levels.")
 
     def __load_random_level(self):
-        self.__load_level(str(randint(0, self.total_levels - 1)))
+        random_level = randint(0, self.total_levels - 1)
+        self.sprite_layer = Layer(random_level)
+        self.__load_level(str(random_level))
 
     def __load_level(self, level):
         path = os.path.dirname(os.path.abspath(__file__))
 
         file = open(
-        path + "/assets/levels/" + level + "_sprites.csv",
+        path + "/assets/levels/" + level + "_blocks.csv",
         "r"
-        )
-        for y in range(15):
-            row = file.readline().split(",")
-            for x in range(40):
-                column = row[x].strip()
-                if column != "-1" and column != "49":
-                    self.sprites.append(Sprite(x * 16, y * 16, SpriteType.NONE))
-                    self.sprites[len(self.sprites) - 1].set_frame(int(column), 16)
-
-        file = open(
-            path + "/assets/levels/" + level + "_blocks.csv",
-            "r"
         )
 
         for y in range(15):
@@ -473,6 +464,26 @@ class Level(Scene):
         
         if self.actor.x + self.actor.width > self.scene_bounds.width:
             self._reset()
+
+    def draw(self, surface):
+
+        for s in self.shapes:
+            s.draw(surface, CameraType.DYNAMIC)
+
+        self.sprite_layer.draw(surface, CameraType.DYNAMIC)
+
+        if globals.debugging:
+            for t in self.triggers:
+                t.draw(surface, CameraType.DYNAMIC)
+
+        self.query_result = self.entity_quad_tree.query(
+            self.camera_viewport.bounds)
+
+        for e in self.query_result:
+            e.draw(surface)
+
+        if self.actor != None:
+            self.actor.draw(surface)
 
 class Boss(Scene):
     def __init__(self):
