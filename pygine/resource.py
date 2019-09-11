@@ -13,6 +13,7 @@ TEXT_SHEET = None
 
 LAYER_LOOKUP = []
 
+
 def load_content():
     global SPRITE_SHEET
     global TEXT_SHEET
@@ -31,16 +32,19 @@ def load_content():
 
 
 def pygame_is_frustrating():
-    total_levels  = 0
+    total_levels = 0
     path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
     for f in os.listdir(path):
         total_levels += 1
     total_levels /= 2
-    total_levels = int(total_levels)
+    total_levels = int(total_levels)    
 
     for i in range(total_levels):
         LAYER_LOOKUP.append(pygame.image.load(path + str(i) + ".png"))
 
+    path = os.path.dirname(os.path.abspath(__file__)) + "/assets/sprites/layers/"
+    for f in os.listdir(path):
+        LAYER_LOOKUP.append(pygame.image.load(path + str(f)))
 
 class SpriteType(IntEnum):
     NONE = 0
@@ -179,7 +183,7 @@ class Text(PygineObject):
 
 
 class Layer(PygineObject):
-    def __init__(self, index):
+    def __init__(self, index, is_level=True):
         super(Layer, self).__init__(0, 0, 0, 0)
         self.index = index
         self.set_width(40 * 16)
@@ -187,7 +191,12 @@ class Layer(PygineObject):
 
         self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
-        self.image.blit(LAYER_LOOKUP[int(self.index)], (0, 0), (0, 0, self.width, self.height))
+        if is_level:
+            self.image.blit(
+                LAYER_LOOKUP[int(self.index)], (0, 0), (0, 0, self.width, self.height))
+        else:
+            self.image.blit(LAYER_LOOKUP[len(
+                LAYER_LOOKUP) - 1 - self.index], (0, 0), (0, 0, self.width, self.height))
 
     def draw(self, surface, camera_type):
         self.image = self.image.convert_alpha(surface)
