@@ -112,6 +112,7 @@ class Player(Actor):
         self.sprite = Sprite(self.x - 10, self.y - 16, SpriteType.PLAYER)
         self.walk_animation = Animation(6, 6, 100)
         self.direction = Direction.NONE
+        self.area = None
         self.query_result = None
 
         self.default_jump_height = 16 * 4
@@ -201,7 +202,6 @@ class Player(Actor):
                 if pressing(InputType.DOWN):
                     self.sprite.set_frame(9, 6)
 
-        print(self.velocity.x)
         if self.direction == Direction.LEFT:
             self.sprite.flip_horizontally(True)
         elif self.direction == Direction.RIGHT:
@@ -311,14 +311,14 @@ class Player(Actor):
                 CameraType.DYNAMIC,
                 self.color
             )
-            draw_rectangle(
-                surface,
-                self.area,
-                CameraType.DYNAMIC,
-                Color.BLACK,
-                1
-            )
-            self.sprite.draw(surface, CameraType.DYNAMIC)
+            if self.area != None:
+                draw_rectangle(
+                    surface,
+                    self.area,
+                    CameraType.DYNAMIC,
+                    Color.BLACK,
+                    1
+                )
         else:
             self.sprite.draw(surface, CameraType.DYNAMIC)
 
@@ -326,18 +326,18 @@ class Player(Actor):
 class Block(Entity):
     def __init__(self, x, y):
         super(Block, self).__init__(x, y, 16, 16)
-        #self.sprite = Sprite(self.x, self.y, SpriteType.SOLID_BLOCK)
+        self.sprite = Sprite(self.x, self.y, SpriteType.SOLID_BLOCK)
 
     def update(self, delta_time, scene_data):
         pass
 
     def draw(self, surface):
         if globals.debugging:
+            self.sprite.draw(surface, CameraType.DYNAMIC)
             draw_rectangle(surface, self.bounds,
-                           CameraType.DYNAMIC, self.color)
+                CameraType.DYNAMIC, self.color, 2)
         else:
             pass
-            #self.sprite.draw(surface, CameraType.DYNAMIC)
 
 
 class QBlock(Entity):
@@ -363,7 +363,8 @@ class QBlock(Entity):
 
     def draw(self, surface):
         if globals.debugging:
+            self.sprite.draw(surface, CameraType.DYNAMIC)
             draw_rectangle(surface, self.bounds,
-                           CameraType.DYNAMIC, self.color)
+                           CameraType.DYNAMIC, self.color, 2)
         else:
             self.sprite.draw(surface, CameraType.DYNAMIC)
