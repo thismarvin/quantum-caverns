@@ -11,6 +11,8 @@ from pygine.utilities import Timer
 SPRITE_SHEET = None
 TEXT_SHEET = None
 
+LAYER_LOOKUP = []
+
 def load_content():
     global SPRITE_SHEET
     global TEXT_SHEET
@@ -23,7 +25,21 @@ def load_content():
     TEXT_SHEET = pygame.image.load(
         path + "/assets/sprites/font.png"
     )
+
+    pygame_is_frustrating()
     load_sound_paths()
+
+
+def pygame_is_frustrating():
+    total_levels  = 0
+    path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
+    for f in os.listdir(path):
+        total_levels += 1
+    total_levels /= 2
+    total_levels = int(total_levels)
+
+    for i in range(total_levels):
+        LAYER_LOOKUP.append(pygame.image.load(path + str(i) + ".png"))
 
 
 class SpriteType(IntEnum):
@@ -102,7 +118,6 @@ class Sprite(PygineObject):
         elif (self.type == SpriteType.TITLE):
             self.__sprite_setup(0, 0, 64, 32)
 
-
         self.__apply_changes_to_sprite()
 
     def __apply_changes_to_sprite(self):
@@ -113,7 +128,7 @@ class Sprite(PygineObject):
                             (self.__sprite_x, self.__sprite_y, self.width, self.height))
         else:
             self.image.blit(SPRITE_SHEET, (0, 0),
-                            (self.__sprite_x, self.__sprite_y, self.width, self.height))    
+                            (self.__sprite_x, self.__sprite_y, self.width, self.height))
 
     def draw(self, surface, camera_type):
         self.image = self.image.convert_alpha(surface)
@@ -161,3 +176,19 @@ class Text(PygineObject):
     def draw(self, surface, camera_type):
         for s in self.sprites:
             s.draw(surface, camera_type)
+
+
+class Layer(PygineObject):
+    def __init__(self, index):
+        super(Layer, self).__init__(0, 0, 0, 0)
+        self.index = index
+        self.set_width(40 * 16)
+        self.set_height(15 * 16)
+
+        self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        self.image.blit(LAYER_LOOKUP[int(self.index)], (0, 0), (0, 0, self.width, self.height))
+
+    def draw(self, surface, camera_type):
+        self.image = self.image.convert_alpha(surface)
+        draw_image(surface, self.image, self.bounds, camera_type)
