@@ -152,6 +152,7 @@ class Player(Actor):
         self.set_location(self.x + self.velocity.x, self.y + self.velocity.y)
 
     def _update_input(self, delta_time):
+
         if pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x -= self.lateral_acceleration
             if self.velocity.x < -self.move_speed:
@@ -159,44 +160,57 @@ class Player(Actor):
 
             if not self.jumping:
                 self.sprite.set_frame(self.walk_animation.current_frame, 6)
+
             self.direction = Direction.LEFT
 
-        if pressing(InputType.RIGHT) and not pressing(InputType.LEFT):
+        elif pressing(InputType.RIGHT) and not pressing(InputType.LEFT):
             self.velocity.x += self.lateral_acceleration
             if self.velocity.x > self.move_speed:
                 self.velocity.x = self.move_speed
 
             if not self.jumping:
                 self.sprite.set_frame(self.walk_animation.current_frame, 6)
+
             self.direction = Direction.RIGHT
 
-        if not pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
+        elif (
+            (not pressing(InputType.LEFT) and not pressing(InputType.RIGHT)) or
+            (pressing(InputType.LEFT) and pressing(InputType.RIGHT))
+        ):
             if self.grounded:
-                self.velocity.lerp(Vector2(0, self.velocity.y), self.ground_friction)
+                self.velocity.lerp(
+                    Vector2(0, self.velocity.y), self.ground_friction)
             else:
-                self.velocity.lerp(Vector2(0, self.velocity.y), self.air_friction)
+                self.velocity.lerp(
+                    Vector2(0, self.velocity.y), self.air_friction)
 
             self.sprite.set_frame(0, 6)
 
-
         if not self.grounded:
-            self.sprite.set_frame(6, 8)
+            if self.velocity.y < 0:
+                self.sprite.set_frame(6, 6)
+            if self.velocity.y > 0:
+                self.sprite.set_frame(7, 6)
+        else:
+            if self.velocity.x == 0:
+                if pressing(InputType.UP):
+                    self.sprite.set_frame(8, 6)
+                if pressing(InputType.DOWN):
+                    self.sprite.set_frame(9, 6)
+
 
         if self.direction == Direction.LEFT:
             self.sprite.flip_horizontally(True)
         elif self.direction == Direction.RIGHT:
             self.sprite.flip_horizontally(False)
 
-
         if pressed(InputType.A) and self.grounded and not self.jumping:
             self.__jump(delta_time)
-            self.jumping = True        
+            self.jumping = True
 
         if self.jumping and self.velocity.y < -self.jump_initial_velocity / 2 and not pressing(InputType.A):
             self.velocity.y = -self.jump_initial_velocity / 2
             self.jumping = False
-
-
 
         if pressed(InputType.X):
             self.attempt_block_shift = True
@@ -278,8 +292,8 @@ class Player(Actor):
         self.walk_animation.update(delta_time)
 
     def update(self, delta_time, scene_data):
-        self._calculate_scaled_speed(delta_time)        
-        self._update_input(delta_time)        
+        self._calculate_scaled_speed(delta_time)
+        self._update_input(delta_time)
         self._apply_force(delta_time)
         self._update_collision_rectangles()
         self._collision(scene_data)

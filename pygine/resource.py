@@ -97,7 +97,7 @@ class Sprite(PygineObject):
             self.__sprite_setup(16, 80, 16, 16)
 
         elif (self.type == SpriteType.PLAYER):
-            self.__sprite_setup(0, 208, 32, 48)
+            self.__sprite_setup(0, 160, 32, 48)
 
         elif (self.type == SpriteType.TITLE):
             self.__sprite_setup(0, 0, 64, 32)
@@ -116,8 +116,7 @@ class Sprite(PygineObject):
                             (self.__sprite_x, self.__sprite_y, self.width, self.height))    
 
     def draw(self, surface, camera_type):
-
-        self.image.convert()
+        self.image = self.image.convert_alpha(surface)
         draw_image(surface, self.image, self.bounds, camera_type)
 
 
