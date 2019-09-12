@@ -9,7 +9,7 @@ from pygine.maths import Vector2
 from pygine.resource import Layer
 from pygine.structures import Quadtree, Bin
 from pygine.sounds import play_song
-from pygine.transitions import Pinhole, TransitionType
+from pygine.transitions import Pinhole, Slide, TransitionType
 from pygine.triggers import OnButtonPressTrigger
 from pygine.utilities import Camera
 from random import randint
@@ -283,9 +283,7 @@ class Scene(object):
         for s in self.query_result:
             s.draw(surface, CameraType.DYNAMIC)
 
-        if globals.debugging:
-            for t in self.triggers:
-                t.draw(surface, CameraType.DYNAMIC)
+
 
         self.query_result = self.entity_quad_tree.query(
             self.camera_viewport.bounds)
@@ -295,6 +293,11 @@ class Scene(object):
 
         if self.actor != None:
             self.actor.draw(surface)
+
+        if globals.debugging:
+            self.entity_quad_tree.draw(surface)
+            for t in self.triggers:
+                t.draw(surface, CameraType.DYNAMIC)
 
 
 class Title(Scene):
@@ -398,7 +401,8 @@ class Level(Scene):
         self.__calculate_total_levels()
 
         self.song = "lapidary.wav"
-
+        self.transition = Slide()
+        self.start_transition = False
         self.background_layer = Layer(0, False)
         self.sprite_layer = None
         self.setup(False)
@@ -414,6 +418,8 @@ class Level(Scene):
         self.entities = []
 
         self.__load_random_level()
+
+        
 
     def _create_triggers(self):
         self.triggers = []
@@ -471,8 +477,18 @@ class Level(Scene):
     def update(self, delta_time):
         super(Level, self).update(delta_time)
 
-        if self.actor.x + self.actor.width > self.scene_bounds.width:
-            self._reset()
+        if self.actor.x > self.scene_bounds.width:
+            self.start_transition = True
+
+            if self.transition.first_half_complete:
+                self._reset()
+
+        if self.start_transition:
+            self.transition.update(delta_time)
+
+            if self.transition.done:
+                self.transition.reset()
+                self.start_transition = False
 
     def draw(self, surface):
         self.background_layer.draw(surface, CameraType.STATIC)
@@ -489,6 +505,13 @@ class Level(Scene):
 
         if self.actor != None:
             self.actor.draw(surface)
+
+        self.transition.draw(surface)
+
+        if globals.debugging:
+            self.entity_quad_tree.draw(surface)
+            for t in self.triggers:
+                t.draw(surface, CameraType.DYNAMIC)
 
 
 class Boss(Scene):
