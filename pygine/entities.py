@@ -60,11 +60,11 @@ class Kinetic(Entity):
         self.collision_width = 0
 
     def _update_collision_rectangles(self):
-        self.collision_width = 3
+        self.collision_width = 4
         self.collision_rectangles = [
-            Rect(self.x , self.y - self.collision_width,
-                 self.width , self.collision_width),
-            Rect(self.x , self.y + self.height, self.width
+            Rect(self.x + 2, self.y - self.collision_width,
+                 self.width - 4, self.collision_width),
+            Rect(self.x + 2, self.y + self.height, self.width - 4
                  , self.collision_width),
             Rect(self.x - self.collision_width, self.y + self.collision_width * 2,
                  self.collision_width, self.height - self.collision_width * 2 * 2),
