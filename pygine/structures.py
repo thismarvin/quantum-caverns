@@ -41,8 +41,8 @@ class Quadtree:
         return False
 
     def query(self, area):    
-        if not area.colliderect(self.boundary):
-            return []
+        #if not area.colliderect(self.boundary):
+        #    return []
 
         result = []
 
