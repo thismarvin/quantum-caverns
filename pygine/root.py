@@ -36,7 +36,7 @@ class Game:
         self.__setup_pixel_scene(320, 240)
         self.__setup_cameras()
 
-        load_content()
+        
 
         Game.state = GameState.RUNNING
         self.clock = pygame.time.Clock()
@@ -48,7 +48,10 @@ class Game:
         self.fps_counter = Text(2, 2, "0")
 
     def __initialize_pygame(self):
-        pygame.init()
+        load_content()
+        pygame.mixer.pre_init(22050, -16, 2, 512)
+        pygame.mixer.init()
+        pygame.init()    
 
     def __setup_window(self, window_width=1280, window_height=720, target_fps=60, fullscreen=False,
                        orientation=Orientaion.LANDSCAPE, title="Game"):

@@ -16,19 +16,20 @@ def load_sound_paths():
     MUSIC_PATH = path + '/assets/music/'
     SOUND_PATH = path + '/assets/sounds/'
 
-    pygame.mixer.init()
-    music.set_volume(0.80)
-
 
 def play_song(filename):
     global current_song
     global MUSIC_PATH
     if filename != current_song:
         music.load(MUSIC_PATH + filename)
+        music.set_volume(0.75)
         music.play(-1)
         current_song = filename
 
 
 def play_sound(filename):
     global SOUND_PATH
-    Sound(SOUND_PATH + filename).play()
+
+    sound = Sound(SOUND_PATH + filename)    
+    sound.set_volume(0.75)
+    sound.play()
