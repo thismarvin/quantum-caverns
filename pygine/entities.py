@@ -297,9 +297,7 @@ class Player(Actor):
         for e in scene_data.entities:
             if isinstance(e, QBlock):
                 e.toggle()
-
         
-
     def update_animation(self, delta_time):
         self.walk_animation.update(delta_time)
 

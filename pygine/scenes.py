@@ -403,8 +403,6 @@ class Level(Scene):
         self.start_transition = False
         self.background_layers = [
             Layer(0, False),
-            Layer(1, False),
-            Layer(2, False),
         ]
         self.sprite_layer = None
 
@@ -494,8 +492,6 @@ class Level(Scene):
     def draw(self, surface):
 
         self.background_layers[0].draw(surface, CameraType.STATIC)
-        self.background_layers[1].draw(surface, CameraType.STATIC)
-        self.background_layers[2].draw(surface, CameraType.DYNAMIC)
 
         self.sprite_layer.draw(surface, CameraType.DYNAMIC)
 
