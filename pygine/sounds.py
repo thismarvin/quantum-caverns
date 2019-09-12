@@ -29,7 +29,6 @@ def play_song(filename):
 
 def play_sound(filename):
     global SOUND_PATH
-
     sound = Sound(SOUND_PATH + filename)    
     sound.set_volume(0.75)
     sound.play()
