@@ -432,7 +432,7 @@ class Level(Scene):
         path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
         for f in os.listdir(path):
             self.total_levels += 1
-        self.total_levels /= 4
+        self.total_levels /= 2
         self.total_levels = int(self.total_levels)
         #print("Loaded " + str(self.total_levels) + " levels.")
 
@@ -446,7 +446,34 @@ class Level(Scene):
 
         with open(path + "/assets/levels/" + level + ".json") as json_file:
             data = json.load(json_file)
+
             for layer in data["layers"]:
+
+                if layer["name"] == "blocks":
+                    array = layer["data"]
+                    for i in range(len(array)):
+                        if array[i] == 36:
+                            self.actor.set_location(
+                                int(i % layer["width"]) * 16,
+                                int(i / layer["width"]) * 16
+                            )
+                        elif array[i] == 81:
+                            self.entities.append(
+                                QBlock(
+                                    int(i % layer["width"]) * 16,
+                                    int(i / layer["width"]) * 16,
+                                    0
+                                )
+                            )
+                        elif array[i] == 82:
+                            self.entities.append(
+                                QBlock(
+                                    int(i % layer["width"]) * 16,
+                                    int(i / layer["width"]) * 16,
+                                    1
+                                )
+                            )
+
                 if layer["name"] == "rectangles":
                     for rectangle in layer["objects"]:
                         self.entities.append(
@@ -457,25 +484,6 @@ class Level(Scene):
                                 int(rectangle["height"])
                             )
                         )
-
-        file = open(
-            path + "/assets/levels/" + level + "_blocks.csv",
-            "r"
-        )
-
-        for y in range(15):
-            row = file.readline().split(",")
-            for x in range(20 + 20):
-                column = row[x].strip()
-                if column != "-1":
-                    if column == "35":
-                        self.actor.set_location(x * 16, y * 16)
-                    elif column == "36":
-                        pass
-                    elif column == "80":
-                        self.entities.append(QBlock(x * 16, y * 16, 0))
-                    elif column == "81":
-                        self.entities.append(QBlock(x * 16, y * 16, 1))
 
     def update(self, delta_time):
         super(Level, self).update(delta_time)
