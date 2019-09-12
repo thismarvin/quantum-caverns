@@ -8,6 +8,7 @@ from pygine import globals
 from pygine.input import InputType, pressed, pressing
 from pygine.maths import Vector2
 from pygine.resource import Animation, Sprite, SpriteType
+from pygine.sounds import play_sound
 from pygine.utilities import CameraType, Color
 from random import randint
 
@@ -281,6 +282,7 @@ class Player(Actor):
 
     def __jump(self, delta_time):
         self.velocity.y = -self.jump_initial_velocity
+        play_sound("jump.wav")
 
     def __shift_blocks(self, scene_data):
         for e in self.query_result:
@@ -289,11 +291,14 @@ class Player(Actor):
 
             if isinstance(e, QBlock):
                 if self.bounds.colliderect(e.bounds):
+                    play_sound("shift_fail.wav")
                     return
 
         for e in scene_data.entities:
             if isinstance(e, QBlock):
                 e.toggle()
+
+        
 
     def update_animation(self, delta_time):
         self.walk_animation.update(delta_time)
