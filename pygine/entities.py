@@ -62,10 +62,10 @@ class Kinetic(Entity):
     def _update_collision_rectangles(self):
         self.collision_width = 3
         self.collision_rectangles = [
-            Rect(self.x + self.collision_width, self.y - self.collision_width,
-                 self.width - self.collision_width * 2, self.collision_width),
-            Rect(self.x + self.collision_width, self.y + self.height, self.width -
-                 self.collision_width * 2, self.collision_width),
+            Rect(self.x , self.y - self.collision_width,
+                 self.width , self.collision_width),
+            Rect(self.x , self.y + self.height, self.width
+                 , self.collision_width),
             Rect(self.x - self.collision_width, self.y + self.collision_width * 2,
                  self.collision_width, self.height - self.collision_width * 2 * 2),
             Rect(self.x + self.width, self.y + self.collision_width * 2,
@@ -240,6 +240,10 @@ class Player(Actor):
             self.velocity.x = 0
 
     def _collision(self, scene_data):
+
+        if self.x < 3:
+            self.set_location(3, self.y)
+
         if (globals.debugging):
             for e in scene_data.entities:
                 e.set_color(Color.WHITE)
