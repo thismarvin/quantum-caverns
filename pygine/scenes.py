@@ -283,8 +283,6 @@ class Scene(object):
         for s in self.query_result:
             s.draw(surface, CameraType.DYNAMIC)
 
-
-
         self.query_result = self.entity_quad_tree.query(
             self.camera_viewport.bounds)
 
@@ -403,8 +401,13 @@ class Level(Scene):
         self.song = "lapidary.wav"
         self.transition = Slide()
         self.start_transition = False
-        self.background_layer = Layer(0, False)
+        self.background_layers = [
+            Layer(0, False),
+            Layer(1, False),
+            Layer(2, False),
+        ]
         self.sprite_layer = None
+
         self.setup(False)
 
     def _reset(self):
@@ -418,8 +421,6 @@ class Level(Scene):
         self.entities = []
 
         self.__load_random_level()
-
-        
 
     def _create_triggers(self):
         self.triggers = []
@@ -491,7 +492,11 @@ class Level(Scene):
                 self.start_transition = False
 
     def draw(self, surface):
-        self.background_layer.draw(surface, CameraType.STATIC)
+
+        self.background_layers[0].draw(surface, CameraType.STATIC)
+        self.background_layers[1].draw(surface, CameraType.STATIC)
+        self.background_layers[2].draw(surface, CameraType.DYNAMIC)
+
         self.sprite_layer.draw(surface, CameraType.DYNAMIC)
 
         if globals.debugging:

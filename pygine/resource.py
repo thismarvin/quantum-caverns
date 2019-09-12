@@ -11,6 +11,7 @@ from pygine.utilities import Timer
 SPRITE_SHEET = None
 TEXT_SHEET = None
 
+TOTAL_LEVELS_LOADED = 0
 LAYER_LOOKUP = []
 
 
@@ -32,19 +33,22 @@ def load_content():
 
 
 def pygame_is_frustrating():
-    total_levels = 0
+    global TOTAL_LEVELS_LOADED
+
     path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
     for f in os.listdir(path):
-        total_levels += 1
-    total_levels /= 4
-    total_levels = int(total_levels)    
+        TOTAL_LEVELS_LOADED += 1
+    TOTAL_LEVELS_LOADED /= 4
+    TOTAL_LEVELS_LOADED = int(TOTAL_LEVELS_LOADED)
 
-    for i in range(total_levels):
+    for i in range(TOTAL_LEVELS_LOADED):
         LAYER_LOOKUP.append(pygame.image.load(path + str(i) + ".png"))
 
-    path = os.path.dirname(os.path.abspath(__file__)) + "/assets/sprites/layers/"
+    path = os.path.dirname(os.path.abspath(__file__)) + \
+        "/assets/sprites/layers/"
     for f in os.listdir(path):
         LAYER_LOOKUP.append(pygame.image.load(path + str(f)))
+
 
 class SpriteType(IntEnum):
     NONE = 0
@@ -195,8 +199,11 @@ class Layer(PygineObject):
             self.image.blit(
                 LAYER_LOOKUP[int(self.index)], (0, 0), (0, 0, self.width, self.height))
         else:
-            self.image.blit(LAYER_LOOKUP[len(
-                LAYER_LOOKUP) - 1 - self.index], (0, 0), (0, 0, self.width, self.height))
+            self.image.blit(
+                LAYER_LOOKUP[TOTAL_LEVELS_LOADED + self.index],
+                (0, 0),
+                (0, 0, self.width, self.height)
+            )
 
     def draw(self, surface, camera_type):
         self.image = self.image.convert_alpha(surface)
