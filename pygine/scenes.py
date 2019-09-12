@@ -406,6 +406,8 @@ class Level(Scene):
         ]
         self.sprite_layer = None
 
+        self.relay_actor(Player(-64 * 16 + 4, -64 * 16))
+
         self.setup(False)
 
     def _reset(self):
@@ -416,7 +418,9 @@ class Level(Scene):
 
         self.shapes = []
 
-        self.entities = []
+        self.entities = [
+            self.actor
+        ]
 
         self.__load_random_level()
 
@@ -465,18 +469,19 @@ class Level(Scene):
                 column = row[x].strip()
                 if column != "-1":
                     if column == "35":
-                        self.relay_actor(Player(x * 16 + 4, y * 16))
+                        self.actor.set_location(x * 16, y * 16)
                     elif column == "36":
                         pass
                     elif column == "80":
-                        self.entities.append(QBlock(x*16, y*16, 0))
+                        self.entities.append(QBlock(x * 16, y * 16, 0))
                     elif column == "81":
-                        self.entities.append(QBlock(x*16, y*16, 1))
+                        self.entities.append(QBlock(x * 16, y * 16, 1))
 
     def update(self, delta_time):
         super(Level, self).update(delta_time)
 
         if self.actor.x > self.scene_bounds.width:
+            self.actor.set_location(1000, self.actor.y)
             self.start_transition = True
 
             if self.transition.first_half_complete:
@@ -490,7 +495,6 @@ class Level(Scene):
                 self.start_transition = False
 
     def draw(self, surface):
-
         self.background_layers[0].draw(surface, CameraType.STATIC)
 
         self.sprite_layer.draw(surface, CameraType.DYNAMIC)
