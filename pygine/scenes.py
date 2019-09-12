@@ -1,4 +1,5 @@
 from enum import IntEnum
+import json
 import os
 import pygame
 from pygame import Rect
@@ -65,7 +66,7 @@ class SceneManager:
         assert (len(self.__all_scenes) > 0), \
             "It looks like you never initialized all the scenes! Make sure to setup and call __initialize_scenes()"
 
-        self.__current_scene = self.__all_scenes[int(starting_scene_type)]        
+        self.__current_scene = self.__all_scenes[int(starting_scene_type)]
 
     def __setup_transition(self):
         if self.__previous_scene.leave_transition_type == TransitionType.PINHOLE_CLOSE:
@@ -180,7 +181,7 @@ class Scene(object):
         self.entities_are_uniform = entities_are_uniform
         if self.entities_are_uniform:
             self.optimal_bin_size = int(
-                math.ceil(math.log(2, maximum_entity_dimension)))
+                math.ceil(math.log(maximum_entity_dimension, 2)))
 
         self._reset()
         self._create_triggers()
@@ -189,7 +190,7 @@ class Scene(object):
         self.scene_bounds = bounds
         self.scene_data.set_scene_bounds(self.scene_bounds)
 
-        buffer = 8
+        buffer = 0
         modified_bounds = Rect(
             -buffer,
             -buffer,
@@ -200,7 +201,8 @@ class Scene(object):
         self.sprite_quad_tree = Quadtree(modified_bounds, 4)
         self.shape_quad_tree = Quadtree(modified_bounds, 4)
         self.entity_quad_tree = Quadtree(modified_bounds, 4)
-        self.entity_bin = Bin(modified_bounds, 4)
+        if self.entities_are_uniform:
+            self.entity_bin = Bin(modified_bounds, self.optimal_bin_size)
         self.first_pass = True
 
     def relay_actor(self, actor):
@@ -399,7 +401,7 @@ class Level(Scene):
 
         self.background_layer = Layer(0, False)
         self.sprite_layer = None
-        self.setup(True, 16)            
+        self.setup(False)
 
     def _reset(self):
         self.set_scene_bounds(
@@ -410,18 +412,18 @@ class Level(Scene):
         self.shapes = []
 
         self.entities = []
-        
+
         self.__load_random_level()
 
     def _create_triggers(self):
         self.triggers = []
 
     def __calculate_total_levels(self):
-        self.total_levels  = 0
+        self.total_levels = 0
         path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
         for f in os.listdir(path):
             self.total_levels += 1
-        self.total_levels /= 2
+        self.total_levels /= 4
         self.total_levels = int(self.total_levels)
         #print("Loaded " + str(self.total_levels) + " levels.")
 
@@ -433,9 +435,23 @@ class Level(Scene):
     def __load_level(self, level):
         path = os.path.dirname(os.path.abspath(__file__))
 
+        with open(path + "/assets/levels/" + level + ".json") as json_file:
+            data = json.load(json_file)
+            for layer in data["layers"]:
+                if layer["name"] == "rectangles":
+                    for rectangle in layer["objects"]:
+                        self.entities.append(
+                            Block(
+                                int(rectangle["x"]),
+                                int(rectangle["y"]),
+                                int(rectangle["width"]),
+                                int(rectangle["height"])
+                            )
+                        )
+
         file = open(
-        path + "/assets/levels/" + level + "_blocks.csv",
-        "r"
+            path + "/assets/levels/" + level + "_blocks.csv",
+            "r"
         )
 
         for y in range(15):
@@ -446,7 +462,7 @@ class Level(Scene):
                     if column == "35":
                         self.relay_actor(Player(x * 16 + 4, y * 16))
                     elif column == "36":
-                        self.entities.append(Block(x * 16, y * 16))
+                        pass
                     elif column == "80":
                         self.entities.append(QBlock(x*16, y*16, 0))
                     elif column == "81":
@@ -454,7 +470,7 @@ class Level(Scene):
 
     def update(self, delta_time):
         super(Level, self).update(delta_time)
-        
+
         if self.actor.x + self.actor.width > self.scene_bounds.width:
             self._reset()
 
@@ -473,6 +489,7 @@ class Level(Scene):
 
         if self.actor != None:
             self.actor.draw(surface)
+
 
 class Boss(Scene):
     def __init__(self):

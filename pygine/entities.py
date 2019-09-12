@@ -246,9 +246,9 @@ class Player(Actor):
 
         self.area = Rect(
             self.x - 16,
-            self.y - 16,
+            self.y - 32,
             self.width + 16 * 2,
-            self.height + 16 * 2
+            self.height + 32 * 2
         )
 
         self.grounded = False
@@ -324,18 +324,18 @@ class Player(Actor):
 
 
 class Block(Entity):
-    def __init__(self, x, y):
-        super(Block, self).__init__(x, y, 16, 16)
-        self.sprite = Sprite(self.x, self.y, SpriteType.SOLID_BLOCK)
+    def __init__(self, x, y, width, height):
+        super(Block, self).__init__(x, y, width, height)
+        #self.sprite = Sprite(self.x, self.y, SpriteType.SOLID_BLOCK)
 
     def update(self, delta_time, scene_data):
         pass
 
     def draw(self, surface):
         if globals.debugging:
-            self.sprite.draw(surface, CameraType.DYNAMIC)
+            #self.sprite.draw(surface, CameraType.DYNAMIC)
             draw_rectangle(surface, self.bounds,
-                CameraType.DYNAMIC, self.color, 2)
+                CameraType.DYNAMIC, self.color, 4)
         else:
             pass
 

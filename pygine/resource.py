@@ -36,7 +36,7 @@ def pygame_is_frustrating():
     path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
     for f in os.listdir(path):
         total_levels += 1
-    total_levels /= 2
+    total_levels /= 4
     total_levels = int(total_levels)    
 
     for i in range(total_levels):
