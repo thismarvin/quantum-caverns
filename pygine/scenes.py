@@ -427,7 +427,6 @@ class Level(Scene):
         ]
         self.sprite_layer = None
 
-        self.starting_location = Vector2(0, 0)
         self.relay_actor(Player(-64 * 16 + 4, -64 * 16))
 
         self.setup(False)
@@ -460,18 +459,24 @@ class Level(Scene):
 
     def __load_random_level(self):                
         random_level = randint(0, self.total_levels - 1)
-
         while random_level == self.previous_level:
             random_level = randint(0, self.total_levels - 1)
 
         self.previous_level = random_level
         self.sprite_layer = Layer(random_level)
-        self.__load_level(str(random_level))
+        self.__load_level(random_level)
+
+    def __restart_level(self):
+        self.entities = [
+            self.actor
+        ]
+        self.__load_level(self.previous_level)
+        self.first_pass = True
 
     def __load_level(self, level):
         path = os.path.dirname(os.path.abspath(__file__))
 
-        with open(path + "/assets/levels/" + level + ".json") as json_file:
+        with open(path + "/assets/levels/" + str(level) + ".json") as json_file:
             data = json.load(json_file)
 
             for layer in data["layers"]:
@@ -480,13 +485,9 @@ class Level(Scene):
                     array = layer["data"]
                     for i in range(len(array)):
                         if array[i] == 36:
-                            self.starting_location = Vector2(
+                            self.actor.set_location(
                                 int(i % layer["width"]) * 16,
                                 int(i / layer["width"]) * 16
-                            )
-                            self.actor.set_location(
-                                self.starting_location.x,
-                                self.starting_location.y
                             )
                         elif array[i] == 38:
                             self.entities.append(
@@ -531,11 +532,7 @@ class Level(Scene):
 
             if self.transition.first_half_complete:
                 self.actor.revive()
-                self.actor.set_location(
-                    self.starting_location.x,
-                    self.starting_location.y
-                )
-                self._reset()
+                self.__restart_level()
 
         if self.actor.x > self.scene_bounds.width:
             self.actor.set_location(1000, self.actor.y)
