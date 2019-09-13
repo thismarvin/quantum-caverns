@@ -304,7 +304,7 @@ class Player(Actor):
                 e.set_color(Color.RED)
 
             if isinstance(e, Crab):
-                if e.aggravated and self.bounds.colliderect(e.bounds):
+                if not e.dead and e.aggravated and self.bounds.colliderect(e.bounds):
                     self.__finessed_by_enemy()
 
     def __jump(self, delta_time):
@@ -519,7 +519,6 @@ class Crab(Kinetic):
 
     def squish(self):
         self.dead = True
-        self.sprite.flip_vertically(True)
         self.velocity.y = -self.jump_initial_velocity * 1.25
         self.velocity.x = -self.move_speed if randint(1, 10) % 2 == 0 else self.move_speed
 
@@ -539,6 +538,9 @@ class Crab(Kinetic):
 
         if self.aggravated:
             self.sprite.increment_sprite_y(32)
+
+        if self.dead:
+             self.sprite.flip_vertically(True)
 
     def update(self, delta_time, scene_data):
         self._calculate_scaled_speed(delta_time)
