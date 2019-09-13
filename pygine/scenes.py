@@ -9,7 +9,7 @@ from pygine.maths import Vector2
 from pygine.resource import Layer
 from pygine.structures import Quadtree, Bin
 from pygine.sounds import play_song
-from pygine.transitions import Pinhole, Slide, TransitionType
+from pygine.transitions import Cage, Pinhole, Slide, TransitionType
 from pygine.triggers import OnButtonPressTrigger
 from pygine.utilities import Camera
 from random import randint
@@ -71,9 +71,13 @@ class SceneManager:
     def __setup_transition(self):
         if self.__previous_scene.leave_transition_type == TransitionType.PINHOLE_CLOSE:
             self.leave_transition = Pinhole(TransitionType.PINHOLE_CLOSE)
+        elif self.__previous_scene.leave_transition_type == TransitionType.CAGE_CLOSE:
+            self.leave_transition = Cage(TransitionType.CAGE_CLOSE)
 
         if self.__next_scene.enter_transition_type == TransitionType.PINHOLE_OPEN:
             self.enter_transition = Pinhole(TransitionType.PINHOLE_OPEN)
+        if self.__next_scene.enter_transition_type == TransitionType.CAGE_OPEN:
+            self.enter_transition = Cage(TransitionType.CAGE_OPEN)
 
         self.start_transition = True
 
@@ -301,6 +305,9 @@ class Scene(object):
 class Title(Scene):
     def __init__(self):
         super(Title, self).__init__()
+
+        self.leave_transition_type = TransitionType.CAGE_CLOSE
+
         self.setup(False)
         self.song = ""
 
@@ -394,6 +401,8 @@ class Cutscene(Scene):
 class Level(Scene):
     def __init__(self):
         super(Level, self).__init__()
+
+        self.enter_transition_type = TransitionType.CAGE_OPEN
 
         self.total_levels = 0
         self.__calculate_total_levels()
