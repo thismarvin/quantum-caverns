@@ -132,6 +132,15 @@ class Player(Actor):
         self.jumping = False
         self.attempt_block_shift = False
 
+        self.attacked = False
+        self.restart = False
+
+    def revive(self):
+        self.attacked = False
+        self.restart = False        
+        self.velocity = Vector2(0, 0)
+        self.sprite.set_frame(0, 6)
+
     def _calculate_scaled_speed(self, delta_time):
         super(Player, self)._calculate_scaled_speed(delta_time)
 
@@ -154,6 +163,8 @@ class Player(Actor):
         self.set_location(self.x + self.velocity.x, self.y + self.velocity.y)
 
     def _update_input(self, delta_time):
+        if self.attacked:
+            return
 
         if pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x -= self.lateral_acceleration
@@ -241,6 +252,8 @@ class Player(Actor):
             self.velocity.x = 0
 
     def _collision(self, scene_data):
+        if self.attacked:
+            return
 
         if self.x < 3:
             self.set_location(3, self.y)
@@ -280,6 +293,18 @@ class Player(Actor):
                     self.__rectanlge_collision_logic(e)
                     self._update_collision_rectangles()
 
+        self.query_result = scene_data.kinetic_quad_tree.query(self.area)
+        for e in self.query_result:
+            if e is self:
+                continue
+
+            if (globals.debugging):
+                e.set_color(Color.RED)
+
+            if isinstance(e, Crab):
+                if e.aggravated and self.bounds.colliderect(e.bounds):
+                    self.__finessed_by_enemy()
+
     def __jump(self, delta_time):
         self.velocity.y = -self.jump_initial_velocity
         play_sound("jump.wav")
@@ -301,7 +326,16 @@ class Player(Actor):
                 e.toggle_aggravation()
 
         play_sound("shift.wav")
+
+    def __finessed_by_enemy(self):
+        self.attacked = True
+        self.velocity.y = -self.jump_initial_velocity * 0.5
+        self.sprite.set_frame(10, 6)
         
+    def __update_death(self, scene_data):
+        if self.y > scene_data.scene_bounds.height + 64:
+            self.restart = True
+
     def __update_animation(self, delta_time):
         self.walk_animation.update(delta_time)
 
@@ -311,6 +345,7 @@ class Player(Actor):
         self._apply_force(delta_time)
         self._update_collision_rectangles()
         self._collision(scene_data)
+        self.__update_death(scene_data)
         self.__update_animation(delta_time)
 
     def draw(self, surface):
@@ -450,10 +485,7 @@ class Crab(Kinetic):
             if e is self:
                 continue
 
-            if (
-                isinstance(e, Block) or
-                isinstance(e, Crab)
-            ):
+            if isinstance(e, Block):
                 self.__rectanlge_collision_logic(e)
                 self._update_collision_rectangles()
 
@@ -466,6 +498,14 @@ class Crab(Kinetic):
                     self.__rectanlge_collision_logic(e)
                     self._update_collision_rectangles()
 
+        self.query_result = scene_data.kinetic_quad_tree.query(self.area)
+        for e in self.query_result:
+            if e is self:
+                continue
+
+            if isinstance(e, Crab):
+                self.__rectanlge_collision_logic(e)
+                self._update_collision_rectangles()
 
     def squish(self):
         self.dead = True

@@ -124,7 +124,7 @@ class SceneManager:
 class SceneDataRelay(object):
     def __init__(self):
         self.scene_bounds = None
-        self.entities = None        
+        self.entities = None
         self.entity_quad_tree = None
         self.entity_bin = None
         self.kinetic_quad_tree = None
@@ -426,6 +426,7 @@ class Level(Scene):
         ]
         self.sprite_layer = None
 
+        self.starting_location = Vector2(0, 0)
         self.relay_actor(Player(-64 * 16 + 4, -64 * 16))
 
         self.setup(False)
@@ -473,9 +474,13 @@ class Level(Scene):
                     array = layer["data"]
                     for i in range(len(array)):
                         if array[i] == 36:
-                            self.actor.set_location(
+                            self.starting_location = Vector2(
                                 int(i % layer["width"]) * 16,
                                 int(i / layer["width"]) * 16
+                            )
+                            self.actor.set_location(
+                                self.starting_location.x,
+                                self.starting_location.y
                             )
                         elif array[i] == 38:
                             self.entities.append(
@@ -514,6 +519,17 @@ class Level(Scene):
 
     def update(self, delta_time):
         super(Level, self).update(delta_time)
+
+        if isinstance(self.actor, Player) and self.actor.restart:
+            self.start_transition = True
+
+            if self.transition.first_half_complete:
+                self.actor.revive()
+                self.actor.set_location(
+                    self.starting_location.x,
+                    self.starting_location.y
+                )
+                self._reset()
 
         if self.actor.x > self.scene_bounds.width:
             self.actor.set_location(1000, self.actor.y)
