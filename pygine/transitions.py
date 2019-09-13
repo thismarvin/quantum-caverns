@@ -7,7 +7,9 @@ from pygine.utilities import Camera, CameraType, Color
 class TransitionType(IntEnum):
     PINHOLE_OPEN = 1
     PINHOLE_CLOSE = 2
-    SLIDE = 3
+    CAGE_OPEN = 3
+    CAGE_CLOSE = 4
+    SLIDE = 5
 
 
 class Transition(PygineObject):
@@ -100,7 +102,7 @@ class Pinhole(Transition):
 
     def draw(self, surface):
         self.circle.draw(surface, CameraType.STATIC)
-        self.circle2.draw(surface, CameraType.STATIC)
+        #self.circle2.draw(surface, CameraType.STATIC)
 
 
 class Slide(Transition):
@@ -156,5 +158,87 @@ class Slide(Transition):
 
     def draw(self, surface):
 
+        for rectangle in self.rectangles:
+            rectangle.draw(surface, CameraType.STATIC)
+
+
+class Cage(Transition):
+    def __init__(self, type):
+        super(Cage, self).__init__(500, 100)
+        self.type = type
+
+        self.total = 8
+
+        self.stagger_width = Camera.BOUNDS.width / self.total
+
+        if self.type == TransitionType.CAGE_CLOSE:
+            self.rectangle = Rectangle(
+                0, -Camera.BOUNDS.height * 3, self.stagger_width, Camera.BOUNDS.height * 3, Color.BLACK)
+
+            self.rectangles = [self.rectangle]
+            for i in range(1, self.total):
+                self.rectangles.append(
+                    Rectangle(
+                        self.stagger_width * i,
+                        -Camera.BOUNDS.height * 3,
+                        self.stagger_width,
+                        Camera.BOUNDS.height * 3,
+                        Color.BLACK
+                    )
+                )
+
+        elif self.type == TransitionType.CAGE_OPEN:
+            self.rectangle = Rectangle(
+                0, 0, self.stagger_width, Camera.BOUNDS.height * 3, Color.BLACK)
+
+            self.rectangles = [self.rectangle]
+            for i in range(1, self.total):
+                self.rectangles.append(
+                    Rectangle(
+                        self.stagger_width * i,
+                        0,
+                        self.stagger_width,
+                        Camera.BOUNDS.height * 3,
+                        Color.BLACK
+                    )
+                )
+
+        self.reset()
+
+    def reset(self):
+        self.speed = self.default_speed
+        self.done = False
+
+        for i in range(len(self.rectangles)):
+            if self.type == TransitionType.CAGE_CLOSE:
+                self.rectangles[i].set_location(self.rectangles[i].x, -self.rectangle.height - i * self.stagger_width)
+            elif self.type == TransitionType.CAGE_OPEN:
+                self.rectangles[i].set_location(self.rectangles[i].x, -i * self.stagger_width)
+
+    def update(self, delta_time):
+        if self.done:
+            return
+
+        if self.type == TransitionType.CAGE_CLOSE:
+            if self.rectangle.y + Camera.BOUNDS.height > Camera.BOUNDS.height:
+                self.rectangle.set_location(
+                    self.rectangle.x, -64)
+                self.done = True
+
+            for rectangle in self.rectangles:
+                rectangle.set_location(
+                    rectangle.x, rectangle.y + self.speed * delta_time)
+
+        elif self.type == TransitionType.CAGE_OPEN:
+            if self.rectangles[len(self.rectangles) - 1].y > Camera.BOUNDS.height:
+                self.done = True
+
+            for rectangle in self.rectangles:
+                rectangle.set_location(
+                    rectangle.x, rectangle.y + self.speed * delta_time)
+
+        self.speed += self.acceleration * delta_time
+
+    def draw(self, surface):
         for rectangle in self.rectangles:
             rectangle.draw(surface, CameraType.STATIC)
