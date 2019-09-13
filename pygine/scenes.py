@@ -417,6 +417,7 @@ class Level(Scene):
 
         self.total_levels = 0
         self.__calculate_total_levels()
+        self.previous_level = -1
 
         self.song = "lapidary.wav"
         self.transition = Slide()
@@ -457,8 +458,13 @@ class Level(Scene):
         self.total_levels = int(self.total_levels)
         #print("Loaded " + str(self.total_levels) + " levels.")
 
-    def __load_random_level(self):
+    def __load_random_level(self):                
         random_level = randint(0, self.total_levels - 1)
+
+        while random_level == self.previous_level:
+            random_level = randint(0, self.total_levels - 1)
+
+        self.previous_level = random_level
         self.sprite_layer = Layer(random_level)
         self.__load_level(str(random_level))
 
