@@ -471,6 +471,14 @@ class Crab(Kinetic):
             self.velocity.x = 0
             self.direction = Direction.RIGHT
 
+        if self.x + self.width > scene_data.scene_bounds.width:
+            self.set_location(scene_data.scene_bounds.width - self.width, self.y)
+            self.velocity.x = 0
+            self.direction = Direction.LEFT
+
+        if self.y > scene_data.scene_bounds.height:
+            self.squish()
+
         self.area = Rect(
             self.x - 16,
             self.y - 16,
@@ -514,7 +522,6 @@ class Crab(Kinetic):
         self.velocity.x = -self.move_speed if randint(1, 10) % 2 == 0 else self.move_speed
 
     def __update_ai(self, scene_data):
-
         if self.dead:
             if self.y > scene_data.scene_bounds.height + 64:
                 self.remove = True
