@@ -131,13 +131,15 @@ class Player(Actor):
         self.grounded = False
         self.jumping = False
         self.attempt_block_shift = False
-
         self.attacked = False
         self.restart = False
 
     def revive(self):
+        self.grounded = False
+        self.jumping = False
+        self.attempt_block_shift = False
         self.attacked = False
-        self.restart = False        
+        self.restart = False      
         self.velocity = Vector2(0, 0)
         self.sprite.set_frame(0, 6)
 
@@ -476,7 +478,7 @@ class Crab(Kinetic):
             self.velocity.x = 0
             self.direction = Direction.LEFT
 
-        if self.y > scene_data.scene_bounds.height:
+        if self.y > scene_data.scene_bounds.height + 64:
             self.squish()
 
         self.area = Rect(
