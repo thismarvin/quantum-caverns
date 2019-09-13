@@ -124,17 +124,19 @@ class SceneManager:
 class SceneDataRelay(object):
     def __init__(self):
         self.scene_bounds = None
-        self.entities = None
+        self.entities = None        
         self.entity_quad_tree = None
         self.entity_bin = None
+        self.kinetic_quad_tree = None
 
     def set_scene_bounds(self, bounds):
         self.scene_bounds = bounds
 
-    def update(self, entites, entity_quad_tree, entity_bin):
+    def update(self, entites, entity_quad_tree, entity_bin, kinetic_quad_tree):
         self.entities = entites
         self.entity_quad_tree = entity_quad_tree
         self.entity_bin = entity_bin
+        self.kinetic_quad_tree = kinetic_quad_tree
 
 
 class Scene(object):
@@ -167,6 +169,7 @@ class Scene(object):
         self.sprite_quad_tree = Quadtree(self.scene_bounds, 4)
         self.shape_quad_tree = Quadtree(self.scene_bounds, 4)
         self.entity_quad_tree = Quadtree(self.scene_bounds, 4)
+        self.kinetic_quad_tree = Quadtree(self.scene_bounds, 4)
         self.entity_bin = Bin(self.scene_bounds, 4)
         self.query_result = None
         self.first_pass = True
@@ -205,6 +208,7 @@ class Scene(object):
         self.sprite_quad_tree = Quadtree(modified_bounds, 4)
         self.shape_quad_tree = Quadtree(modified_bounds, 4)
         self.entity_quad_tree = Quadtree(modified_bounds, 4)
+        self.kinetic_quad_tree = Quadtree(self.scene_bounds, 4)
         if self.entities_are_uniform:
             self.entity_bin = Bin(modified_bounds, self.optimal_bin_size)
         self.first_pass = True
@@ -241,9 +245,15 @@ class Scene(object):
             if self.entities_are_uniform:
                 self.entity_bin.clear()
             for i in range(len(self.entities)):
-                self.entity_quad_tree.insert(self.entities[i])
-                if self.entities_are_uniform:
-                    self.entity_bin.insert(self.entities[i])
+                if not isinstance(self.entities[i], Kinetic):
+                    self.entity_quad_tree.insert(self.entities[i])
+                    if self.entities_are_uniform:
+                        self.entity_bin.insert(self.entities[i])
+
+        self.kinetic_quad_tree.clear()
+        for i in range(len(self.entities)):
+            if isinstance(self.entities[i], Kinetic):
+                self.kinetic_quad_tree.insert(self.entities[i])
 
     def __update_entities(self, delta_time):
         for i in range(len(self.entities)-1, -1, -1):
@@ -270,7 +280,8 @@ class Scene(object):
         self.scene_data.update(
             self.entities,
             self.entity_quad_tree,
-            self.entity_bin
+            self.entity_bin,
+            self.kinetic_quad_tree
         )
         self.__update_entities(delta_time)
         self.__update_triggers(delta_time)
@@ -531,6 +542,12 @@ class Level(Scene):
             self.camera_viewport.bounds)
         for e in self.query_result:
             e.draw(surface)
+
+        self.query_result = self.kinetic_quad_tree.query(
+            self.camera_viewport.bounds)
+        for e in self.query_result:
+            if not isinstance(e, Actor):
+                e.draw(surface)
 
         if self.actor != None:
             self.actor.draw(surface)
