@@ -457,6 +457,13 @@ class Level(Scene):
                                 int(i % layer["width"]) * 16,
                                 int(i / layer["width"]) * 16
                             )
+                        elif array[i] == 38:
+                            self.entities.append(
+                                Crab(
+                                    int(i % layer["width"]) * 16,
+                                    int(i / layer["width"]) * 16
+                                )
+                            )
                         elif array[i] == 81:
                             self.entities.append(
                                 QBlock(
