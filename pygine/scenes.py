@@ -461,7 +461,7 @@ class Level(Scene):
         random_level = randint(0, self.total_levels - 1)
         while random_level == self.previous_level:
             random_level = randint(0, self.total_levels - 1)
-
+        
         self.previous_level = random_level
         self.sprite_layer = Layer(random_level)
         self.__load_level(random_level)

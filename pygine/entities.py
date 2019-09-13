@@ -65,8 +65,8 @@ class Kinetic(Entity):
         self.collision_rectangles = [
             Rect(self.x + 2, self.y - self.collision_width,
                  self.width - 4, self.collision_width),
-            Rect(self.x + 2, self.y + self.height, self.width - 4
-                 , self.collision_width),
+            Rect(self.x + 2, self.y + self.height,
+                 self.width - 4, self.collision_width),
             Rect(self.x - self.collision_width, self.y + self.collision_width * 2,
                  self.collision_width, self.height - self.collision_width * 2 * 2),
             Rect(self.x + self.width, self.y + self.collision_width * 2,
@@ -139,7 +139,7 @@ class Player(Actor):
         self.jumping = False
         self.attempt_block_shift = False
         self.attacked = False
-        self.restart = False      
+        self.restart = False
         self.velocity = Vector2(0, 0)
         self.sprite.set_frame(0, 6)
 
@@ -304,8 +304,18 @@ class Player(Actor):
                 e.set_color(Color.RED)
 
             if isinstance(e, Crab):
-                if not e.dead and e.aggravated and self.bounds.colliderect(e.bounds):
-                    self.__finessed_by_enemy()
+                if not e.dead:
+                    if (
+                        not e.aggravated and
+                        not self.grounded and
+                        self.velocity.y > 0 and
+                        self.collision_rectangles[1].colliderect(e.bounds)
+                    ):
+                        e.squish()
+                        self.velocity.y = -self.jump_initial_velocity * 0.75
+
+                    elif e.aggravated and self.bounds.colliderect(e.bounds):
+                        self.__finessed_by_enemy()
 
     def __jump(self, delta_time):
         self.velocity.y = -self.jump_initial_velocity
@@ -333,7 +343,7 @@ class Player(Actor):
         self.attacked = True
         self.velocity.y = -self.jump_initial_velocity * 0.5
         self.sprite.set_frame(10, 6)
-        
+
     def __update_death(self, scene_data):
         if self.y > scene_data.scene_bounds.height + 64:
             self.restart = True
@@ -386,12 +396,12 @@ class Crab(Kinetic):
         self.jump_initial_velocity = 0
         self.gravity = 0
         self.lateral_acceleration = 0
-        
+
         self.aggravated_move_speed = 100
 
         self.internal_bounds = Rect(self.x + 5, self.y + 5, 1, 1)
 
-        self.grounded = False      
+        self.grounded = False
         self.aggravated = False
         self.dead = False
 
@@ -404,18 +414,18 @@ class Crab(Kinetic):
         if self.dead:
             return
 
-        self.aggravated = not self.aggravated  
+        self.aggravated = not self.aggravated
 
-    def _calculate_scaled_speed(self, delta_time):    
+    def _calculate_scaled_speed(self, delta_time):
         if self.aggravated:
             self.move_speed = self.aggravated_move_speed * delta_time
         else:
             self.move_speed = self.default_move_speed * delta_time
-        
+
         time = 1 / delta_time * self.jump_duration
 
         self.jump_initial_velocity = 4 * self.default_jump_height / time
-        self.gravity = 8 * self.default_jump_height / time**2        
+        self.gravity = 8 * self.default_jump_height / time**2
 
     def _apply_force(self, delta_time):
         self.velocity.y += self.gravity
@@ -433,8 +443,8 @@ class Crab(Kinetic):
         self.collision_rectangles = [
             Rect(self.x + 2, self.y - self.collision_width * 2,
                  self.width - 4, self.collision_width * 2),
-            Rect(self.x + 2, self.y + self.height, self.width - 4
-                 , self.collision_width * 2),
+            Rect(self.x + 2, self.y + self.height,
+                 self.width - 4, self.collision_width * 2),
             Rect(self.x - self.collision_width, self.y + self.collision_width,
                  self.collision_width, self.height - self.collision_width * 2),
             Rect(self.x + self.width, self.y + self.collision_width,
@@ -474,7 +484,8 @@ class Crab(Kinetic):
             self.direction = Direction.RIGHT
 
         if self.x + self.width > scene_data.scene_bounds.width:
-            self.set_location(scene_data.scene_bounds.width - self.width, self.y)
+            self.set_location(
+                scene_data.scene_bounds.width - self.width, self.y)
             self.velocity.x = 0
             self.direction = Direction.LEFT
 
@@ -501,7 +512,7 @@ class Crab(Kinetic):
 
             elif isinstance(e, QBlock):
                 if e.active:
-                    
+
                     if not self.dead and self.internal_bounds.colliderect(e.bounds):
                         self.squish()
 
@@ -520,7 +531,8 @@ class Crab(Kinetic):
     def squish(self):
         self.dead = True
         self.velocity.y = -self.jump_initial_velocity * 1.25
-        self.velocity.x = -self.move_speed if randint(1, 10) % 2 == 0 else self.move_speed
+        self.velocity.x = - \
+            self.move_speed if randint(1, 10) % 2 == 0 else self.move_speed
 
     def __update_ai(self, scene_data):
         if self.dead:
@@ -534,13 +546,14 @@ class Crab(Kinetic):
     def __update_animation(self, delta_time):
         self.walk_animation.update(delta_time)
 
-        self.sprite.set_frame(self.walk_animation.current_frame, self.walk_animation.columns)
+        self.sprite.set_frame(
+            self.walk_animation.current_frame, self.walk_animation.columns)
 
         if self.aggravated:
             self.sprite.increment_sprite_y(32)
 
         if self.dead:
-             self.sprite.flip_vertically(True)
+            self.sprite.flip_vertically(True)
 
     def update(self, delta_time, scene_data):
         self._calculate_scaled_speed(delta_time)
@@ -575,7 +588,7 @@ class Block(Entity):
         if globals.debugging:
             #self.sprite.draw(surface, CameraType.DYNAMIC)
             draw_rectangle(surface, self.bounds,
-                CameraType.DYNAMIC, self.color, 4)
+                           CameraType.DYNAMIC, self.color, 4)
         else:
             pass
 
