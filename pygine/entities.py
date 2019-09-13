@@ -297,10 +297,12 @@ class Player(Actor):
         for e in scene_data.entities:
             if isinstance(e, QBlock):
                 e.toggle()
+            elif isinstance(e, Crab):
+                e.toggle_aggravation()
 
         play_sound("shift.wav")
         
-    def update_animation(self, delta_time):
+    def __update_animation(self, delta_time):
         self.walk_animation.update(delta_time)
 
     def update(self, delta_time, scene_data):
@@ -309,7 +311,7 @@ class Player(Actor):
         self._apply_force(delta_time)
         self._update_collision_rectangles()
         self._collision(scene_data)
-        self.update_animation(delta_time)
+        self.__update_animation(delta_time)
 
     def draw(self, surface):
         if globals.debugging:
@@ -328,6 +330,184 @@ class Player(Actor):
                     Color.BLACK,
                     1
                 )
+        else:
+            self.sprite.draw(surface, CameraType.DYNAMIC)
+
+
+class Crab(Kinetic):
+    def __init__(self, x, y):
+        super(Crab, self).__init__(x, y, 11, 9, 25)
+        self.sprite = Sprite(self.x - 18, self.y - 19, SpriteType.CRAB)
+        self.walk_animation = Animation(3, 3, 150)
+        self.direction = Direction.RIGHT
+        self.area = None
+        self.query_result = None
+
+        self.default_jump_height = 16 * 1.5
+        self.jump_duration = 0.5
+
+        self.jump_initial_velocity = 0
+        self.gravity = 0
+        self.lateral_acceleration = 0
+        
+        self.aggravated_move_speed = 100
+
+        self.internal_bounds = Rect(self.x + 5, self.y + 5, 1, 1)
+
+        self.grounded = False      
+        self.aggravated = False
+        self.dead = False
+
+    def set_location(self, x, y):
+        super(Crab, self).set_location(x, y)
+        self.sprite.set_location(self.x - 18, self.y - 19)
+        self.internal_bounds = Rect(self.x + 5, self.y + 5, 1, 1)
+
+    def toggle_aggravation(self):
+        if self.dead:
+            return
+
+        self.aggravated = not self.aggravated  
+
+    def _calculate_scaled_speed(self, delta_time):    
+        if self.aggravated:
+            self.move_speed = self.aggravated_move_speed * delta_time
+        else:
+            self.move_speed = self.default_move_speed * delta_time
+        
+        time = 1 / delta_time * self.jump_duration
+
+        self.jump_initial_velocity = 4 * self.default_jump_height / time
+        self.gravity = 8 * self.default_jump_height / time**2        
+
+    def _apply_force(self, delta_time):
+        self.velocity.y += self.gravity
+
+        if self.direction == Direction.RIGHT:
+            self.velocity.x = self.move_speed
+
+        if self.direction == Direction.LEFT:
+            self.velocity.x = -self.move_speed
+
+        self.set_location(self.x + self.velocity.x, self.y + self.velocity.y)
+
+    def _update_collision_rectangles(self):
+        self.collision_width = 3
+        self.collision_rectangles = [
+            Rect(self.x + 2, self.y - self.collision_width * 2,
+                 self.width - 4, self.collision_width * 2),
+            Rect(self.x + 2, self.y + self.height, self.width - 4
+                 , self.collision_width * 2),
+            Rect(self.x - self.collision_width, self.y + self.collision_width,
+                 self.collision_width, self.height - self.collision_width * 2),
+            Rect(self.x + self.width, self.y + self.collision_width,
+                 self.collision_width, self.height - self.collision_width * 2)
+        ]
+
+    def __rectanlge_collision_logic(self, entity):
+        # Bottom
+        if self.velocity.y < 0 and self.collision_rectangles[0].colliderect(entity.bounds):
+            self.set_location(self.x, entity.bounds.bottom)
+            self.velocity.y = 0
+
+        # Top
+        if self.velocity.y > 0 and self.collision_rectangles[1].colliderect(entity.bounds):
+            self.set_location(self.x, entity.bounds.top - self.bounds.height)
+            self.velocity.y = 0
+            self.grounded = True
+
+        # Right
+        if self.velocity.x < 0 and self.collision_rectangles[2].colliderect(entity.bounds):
+            self.set_location(entity.bounds.right, self.y)
+            self.velocity.x = 0
+            self.direction = Direction.RIGHT
+        # Left
+        if self.velocity.x > 0 and self.collision_rectangles[3].colliderect(entity.bounds):
+            self.set_location(entity.bounds.left - self.bounds.width, self.y)
+            self.velocity.x = 0
+            self.direction = Direction.LEFT
+
+    def _collision(self, scene_data):
+        if self.dead:
+            return
+
+        if self.x < 3:
+            self.set_location(3, self.y)
+            self.velocity.x = 0
+            self.direction = Direction.RIGHT
+
+        self.area = Rect(
+            self.x - 16,
+            self.y - 16,
+            self.width + 16 * 2,
+            self.height + 16 * 2
+        )
+        self.query_result = scene_data.entity_quad_tree.query(self.area)
+
+        self.grounded = False
+
+        for e in self.query_result:
+            if e is self:
+                continue
+
+            if (
+                isinstance(e, Block) or
+                isinstance(e, Crab)
+            ):
+                self.__rectanlge_collision_logic(e)
+                self._update_collision_rectangles()
+
+            elif isinstance(e, QBlock):
+                if e.active:
+                    
+                    if not self.dead and self.internal_bounds.colliderect(e.bounds):
+                        self.squish()
+
+                    self.__rectanlge_collision_logic(e)
+                    self._update_collision_rectangles()
+
+
+    def squish(self):
+        self.dead = True
+        self.sprite.flip_vertically(True)
+        self.velocity.y = -self.jump_initial_velocity * 1.25
+        self.velocity.x = -self.move_speed if randint(1, 10) % 2 == 0 else self.move_speed
+
+    def __update_ai(self, scene_data):
+
+        if self.dead:
+            if self.y > scene_data.scene_bounds.height + 64:
+                self.remove = True
+
+        if self.aggravated:
+            if self.grounded:
+                self.velocity.y = -self.jump_initial_velocity
+
+    def __update_animation(self, delta_time):
+        self.walk_animation.update(delta_time)
+
+        self.sprite.set_frame(self.walk_animation.current_frame, self.walk_animation.columns)
+
+        if self.aggravated:
+            self.sprite.increment_sprite_y(32)
+
+    def update(self, delta_time, scene_data):
+        self._calculate_scaled_speed(delta_time)
+        self.__update_ai(scene_data)
+        self._apply_force(delta_time)
+        self._update_collision_rectangles()
+        self._collision(scene_data)
+        self.__update_animation(delta_time)
+
+    def draw(self, surface):
+        if globals.debugging:
+            self._draw_collision_rectangles(surface)
+            draw_rectangle(
+                surface,
+                self.bounds,
+                CameraType.DYNAMIC,
+                self.color
+            )
         else:
             self.sprite.draw(surface, CameraType.DYNAMIC)
 
