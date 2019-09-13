@@ -23,10 +23,10 @@ def load_content():
 
     SPRITE_SHEET = pygame.image.load(
         path + "/assets/sprites/sprites.png"
-    )
+    ).convert_alpha()
     TEXT_SHEET = pygame.image.load(
         path + "/assets/sprites/font.png"
-    )
+    ).convert_alpha()
 
     pygame_is_frustrating()
     load_sound_paths()
@@ -42,12 +42,13 @@ def pygame_is_frustrating():
     TOTAL_LEVELS_LOADED = int(TOTAL_LEVELS_LOADED)
 
     for i in range(TOTAL_LEVELS_LOADED):
-        LAYER_LOOKUP.append(pygame.image.load(path + str(i) + ".png"))
+        LAYER_LOOKUP.append(pygame.image.load(
+            path + str(i) + ".png").convert_alpha())
 
     path = os.path.dirname(os.path.abspath(__file__)) + \
         "/assets/sprites/layers/"
     for f in os.listdir(path):
-        LAYER_LOOKUP.append(pygame.image.load(path + str(f)))
+        LAYER_LOOKUP.append(pygame.image.load(path + str(f)).convert())
 
 
 class SpriteType(IntEnum):
@@ -60,7 +61,9 @@ class SpriteType(IntEnum):
 
     PLAYER = 6
 
-    TITLE = 7
+    CRAB = 7
+
+    TITLE = 8
 
 
 class Sprite(PygineObject):
@@ -88,15 +91,19 @@ class Sprite(PygineObject):
 
     def flip_horizontally(self, flip):
         if flip:
-            self.image = pygame.transform.flip(self.image, True, False)
+            self.image = pygame.transform.flip(
+                self.image, True, False).convert_alpha()
         else:
-            self.image = pygame.transform.flip(self.image, False, False)
+            self.image = pygame.transform.flip(
+                self.image, False, False).convert_alpha()
 
     def flip_vertically(self, flip):
         if flip:
-            self.image = pygame.transform.flip(self.image, False, True)
+            self.image = pygame.transform.flip(
+                self.image, False, True).convert_alpha()
         else:
-            self.image = pygame.transform.flip(self.image, False, False)
+            self.image = pygame.transform.flip(
+                self.image, False, False).convert_alpha()
 
     def __sprite_setup(self, sprite_x=0, sprite_y=0, width=0, height=0):
         self.__original_sprite_x = sprite_x
@@ -123,13 +130,17 @@ class Sprite(PygineObject):
         elif (self.type == SpriteType.PLAYER):
             self.__sprite_setup(0, 160, 32, 48)
 
+        elif (self.type == SpriteType.CRAB):
+            self.__sprite_setup(32, 80, 48, 32)
+
         elif (self.type == SpriteType.TITLE):
             self.__sprite_setup(0, 0, 64, 32)
 
         self.__apply_changes_to_sprite()
 
     def __apply_changes_to_sprite(self):
-        self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        self.image = pygame.Surface(
+            (self.width, self.height), pygame.SRCALPHA).convert_alpha()
 
         if self.type == SpriteType.TEXT:
             self.image.blit(TEXT_SHEET, (0, 0),
@@ -139,7 +150,6 @@ class Sprite(PygineObject):
                             (self.__sprite_x, self.__sprite_y, self.width, self.height))
 
     def draw(self, surface, camera_type):
-        self.image = self.image.convert_alpha(surface)
         draw_image(surface, self.image, self.bounds, camera_type)
 
 
@@ -192,19 +202,22 @@ class Layer(PygineObject):
         self.index = index
         self.set_width(40 * 16)
         self.set_height(15 * 16)
+        self.wow = False
 
         self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
         if is_level:
+            self.image = self.image.convert_alpha()
             self.image.blit(
                 LAYER_LOOKUP[int(self.index)], (0, 0), (0, 0, self.width, self.height))
+            
         else:
+            self.image = self.image.convert()
             self.image.blit(
                 LAYER_LOOKUP[TOTAL_LEVELS_LOADED + self.index],
                 (0, 0),
                 (0, 0, self.width, self.height)
-            )
+            )            
 
     def draw(self, surface, camera_type):
-        self.image = self.image.convert_alpha(surface)
         draw_image(surface, self.image, self.bounds, camera_type)

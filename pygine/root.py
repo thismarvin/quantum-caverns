@@ -36,7 +36,7 @@ class Game:
         self.__setup_pixel_scene(320, 240)
         self.__setup_cameras()
 
-        
+        load_content()
 
         Game.state = GameState.RUNNING
         self.clock = pygame.time.Clock()
@@ -48,10 +48,10 @@ class Game:
         self.fps_counter = Text(2, 2, "0")
 
     def __initialize_pygame(self):
-        load_content()
         pygame.mixer.pre_init(22050, -16, 2, 512)
         pygame.mixer.init()
-        pygame.init()    
+
+        pygame.init()
 
     def __setup_window(self, window_width=1280, window_height=720, target_fps=60, fullscreen=False,
                        orientation=Orientaion.LANDSCAPE, title="Game"):
@@ -70,10 +70,10 @@ class Game:
 
         if self.fullscreen:
             self.window = pygame.display.set_mode(
-                (self.display_width, self.display_height), pygame.FULLSCREEN)
+                (self.display_width, self.display_height), pygame.FULLSCREEN | pygame.DOUBLEBUF)
         else:
             self.window = pygame.display.set_mode(
-                (self.window_width, self.window_height))
+                (self.window_width, self.window_height), pygame.DOUBLEBUF)
 
         pygame.display.set_caption(title)
 
@@ -127,10 +127,10 @@ class Game:
         self.fullscreen = not self.fullscreen
         if self.fullscreen:
             self.window = pygame.display.set_mode(
-                (self.display_width, self.display_height), pygame.FULLSCREEN)
+                (self.display_width, self.display_height), pygame.FULLSCREEN | pygame.DOUBLEBUF)
         else:
             self.window = pygame.display.set_mode(
-                (self.window_width, self.window_height))
+                (self.window_width, self.window_height), pygame.DOUBLEBUF)
 
         self.__setup_cameras()
 
