@@ -9,20 +9,26 @@ from pygine.utilities import Timer
 
 
 SPRITE_SHEET = None
+BOSS_SHEET = None
 TEXT_SHEET = None
 
 TOTAL_LEVELS_LOADED = 0
 LAYER_LOOKUP = []
-
+TOTAL_BOSSES_LOADED = 0
+BOSS_LOOKUP = []
 
 def load_content():
     global SPRITE_SHEET
+    global BOSS_SHEET
     global TEXT_SHEET
 
     path = os.path.dirname(os.path.abspath(__file__))
 
     SPRITE_SHEET = pygame.image.load(
         path + "/assets/sprites/sprites.png"
+    ).convert_alpha()
+    BOSS_SHEET = pygame.image.load(
+        path + "/assets/sprites/sprites_boss.png"
     ).convert_alpha()
     TEXT_SHEET = pygame.image.load(
         path + "/assets/sprites/font.png"
@@ -34,7 +40,9 @@ def load_content():
 
 def pygame_is_frustrating():
     global TOTAL_LEVELS_LOADED
+    global TOTAL_BOSSES_LOADED
 
+    # Load normal levels
     path = os.path.dirname(os.path.abspath(__file__)) + "/assets/levels/"
     for f in os.listdir(path):
         TOTAL_LEVELS_LOADED += 1
@@ -45,6 +53,18 @@ def pygame_is_frustrating():
         LAYER_LOOKUP.append(pygame.image.load(
             path + str(i) + ".png").convert_alpha())
 
+    # Load boses
+    path = os.path.dirname(os.path.abspath(__file__)) + "/assets/bosses/"
+    for f in os.listdir(path):
+        TOTAL_BOSSES_LOADED += 1
+    TOTAL_BOSSES_LOADED /= 2
+    TOTAL_BOSSES_LOADED = int(TOTAL_BOSSES_LOADED)
+
+    for i in range(TOTAL_BOSSES_LOADED):
+        BOSS_LOOKUP.append(pygame.image.load(
+            path + str(i) + ".png").convert_alpha())            
+
+    # Load Extra backgrounds
     path = os.path.dirname(os.path.abspath(__file__)) + \
         "/assets/sprites/layers/"
     for f in os.listdir(path):
@@ -62,13 +82,22 @@ class SpriteType(IntEnum):
     PLAYER = 6
 
     CRAB = 7
+    
+    CRAB_BOSS_BODY = 8
+    CRAB_BOSS_ARM = 9
+    CRAB_BOSS_BANDAID = 10
+    CRAB_BOSS_EMOTE_MAD = 11
+    CRAB_BOSS_EMOTE_THIRSTY = 12
+    CRAB_BOSS_EMOTE_SLEEPY = 13
+    CRAB_FACE = 14
 
-    TITLE = 8
+    TITLE = 15
 
 
 class Sprite(PygineObject):
     def __init__(self, x, y, sprite_type=SpriteType.NONE):
         super(Sprite, self).__init__(x, y, 0, 0)
+        self.part_of_boss = False
         self.set_sprite(sprite_type)
 
     def set_sprite(self, sprite_type):
@@ -132,6 +161,35 @@ class Sprite(PygineObject):
 
         elif (self.type == SpriteType.CRAB):
             self.__sprite_setup(32, 80, 48, 32)
+
+
+        elif (self.type == SpriteType.CRAB_BOSS_BODY):
+            self.part_of_boss = True
+            self.__sprite_setup(0, 0, 256, 112)
+
+        elif (self.type == SpriteType.CRAB_BOSS_ARM):
+            self.part_of_boss = True
+            self.__sprite_setup(0, 112, 64, 80)
+
+        elif (self.type == SpriteType.CRAB_BOSS_BANDAID):
+            self.part_of_boss = True
+            self.__sprite_setup(64, 112, 64, 32)
+
+        elif (self.type == SpriteType.CRAB_BOSS_EMOTE_MAD):
+            self.part_of_boss = True
+            self.__sprite_setup(128, 112, 32, 32)
+
+        elif (self.type == SpriteType.CRAB_BOSS_EMOTE_THIRSTY):
+            self.part_of_boss = True
+            self.__sprite_setup(128, 144, 32, 32)
+
+        elif (self.type == SpriteType.CRAB_BOSS_EMOTE_SLEEPY):
+            self.part_of_boss = True
+            self.__sprite_setup(160, 112, 80, 48)
+
+        elif (self.type == SpriteType.CRAB_FACE):
+            self.part_of_boss = True
+            self.__sprite_setup(0, 192, 64, 32)
 
         elif (self.type == SpriteType.TITLE):
             self.__sprite_setup(0, 0, 64, 32)
@@ -197,19 +255,28 @@ class Text(PygineObject):
 
 
 class Layer(PygineObject):
-    def __init__(self, index, is_level=True):
+    def __init__(self, index, is_level=True, is_boss=False):
         super(Layer, self).__init__(0, 0, 0, 0)
         self.index = index
-        self.set_width(40 * 16)
-        self.set_height(15 * 16)
-        self.wow = False
-
-        self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
         if is_level:
-            self.image = self.image.convert_alpha()
+            self.set_width(40 * 16)
+            self.set_height(15 * 16)
+        else:
+            self.set_width(20 * 16)
+            self.set_height(15 * 16)
+        
+        self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        if is_level and not is_boss:
+            self.image = self.image.convert_alpha()            
             self.image.blit(
                 LAYER_LOOKUP[int(self.index)], (0, 0), (0, 0, self.width, self.height))
+
+        elif is_level and is_boss:
+            self.image = self.image.convert_alpha()            
+            self.image.blit(
+                BOSS_LOOKUP[int(self.index)], (0, 0), (0, 0, self.width, self.height))
             
         else:
             self.image = self.image.convert()
@@ -217,7 +284,7 @@ class Layer(PygineObject):
                 LAYER_LOOKUP[TOTAL_LEVELS_LOADED + self.index],
                 (0, 0),
                 (0, 0, self.width, self.height)
-            )            
+            )             
 
     def draw(self, surface, camera_type):
         draw_image(surface, self.image, self.bounds, camera_type)
