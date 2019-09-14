@@ -413,7 +413,8 @@ class Level(Scene):
     def __init__(self):
         super(Level, self).__init__()
 
-        self.enter_transition_type = TransitionType.CAGE_OPEN
+        self.leave_transition_type = TransitionType.CAGE_CLOSE
+        self.enter_transition_type = TransitionType.CAGE_OPEN    
 
         self.total_levels = 0
         self.__calculate_total_levels()
@@ -425,6 +426,9 @@ class Level(Scene):
         self.background_layers = [
             Layer(0, False),
         ]
+        self.queue_boss = False
+
+
         self.sprite_layer = None
 
         self.relay_actor(Player(-64 * 16 + 4, -64 * 16))
@@ -461,7 +465,7 @@ class Level(Scene):
         random_level = randint(0, self.total_levels - 1)
         while random_level == self.previous_level:
             random_level = randint(0, self.total_levels - 1)
-        
+
         self.previous_level = random_level
         self.sprite_layer = Layer(random_level)
         self.__load_level(random_level)
@@ -534,19 +538,21 @@ class Level(Scene):
                 self.actor.revive()
                 self.__restart_level()
 
-        if self.actor.x > self.scene_bounds.width:
-            self.actor.set_location(1000, self.actor.y)
-            self.start_transition = True
+        if self.actor.x > self.scene_bounds.width and not self.queue_boss:            
+            #self.actor.set_location(1000, self.actor.y)
+            #self.start_transition = True
 
-            if self.transition.first_half_complete:
-                self._reset()
+            #if self.transition.first_half_complete:
+            #    self._reset()
+                
+            self.queue_boss = True
+            self.manager.queue_next_scene(SceneType.BOSS)
 
         if self.start_transition:
-            self.transition.update(delta_time)
-
-            if self.transition.done:
-                self.transition.reset()
-                self.start_transition = False
+           self.transition.update(delta_time)
+           if self.transition.done:
+               self.transition.reset()
+               self.start_transition = False
 
     def draw(self, surface):
         self.background_layers[0].draw(surface, CameraType.STATIC)
@@ -579,11 +585,22 @@ class Level(Scene):
                 t.draw(surface, CameraType.DYNAMIC)
 
 
-class Boss(Scene):
+class Boss(Level):
     def __init__(self):
         super(Boss, self).__init__()
+
+        self.leave_transition_type = TransitionType.CAGE_CLOSE
+        self.enter_transition_type = TransitionType.CAGE_OPEN    
+
+        self.song = "lapidary.wav"
+
+        self.background_layers = [
+            Layer(1, False, False),
+        ]
+
+        self.sprite_layer = None    
+
         self.setup(False)
-        self.song = ""
 
     def _reset(self):
         self.set_scene_bounds(
@@ -591,15 +608,95 @@ class Boss(Scene):
 
         self.sprites = []
 
-        self.shapes = [
-            Rectangle(
-                0,
-                0,
-                self.scene_bounds.width,
-                self.scene_bounds.height,
-                Color.BLACK
-            )
+        self.shapes = []
+
+        self.entities = [
+            self.actor
         ]
 
-    def _create_triggers(self):
-        self.triggers = []
+        self.__load_level(0)
+
+    def __load_level(self, level):
+
+        self.sprite_layer = Layer(level, True, True)
+
+        path = os.path.dirname(os.path.abspath(__file__))
+
+        with open(path + "/assets/bosses/" + str(level) + ".json") as json_file:
+            data = json.load(json_file)
+
+            for layer in data["layers"]:
+
+                if layer["name"] == "blocks":
+                    array = layer["data"]
+                    for i in range(len(array)):
+                        if array[i] == 36:
+                            self.actor.set_location(
+                                int(i % layer["width"]) * 16,
+                                int(i / layer["width"]) * 16
+                            )
+                        elif array[i] == 38:
+                            self.entities.append(
+                                Crab(
+                                    int(i % layer["width"]) * 16,
+                                    int(i / layer["width"]) * 16
+                                )
+                            )
+                        elif array[i] == 81:
+                            self.entities.append(
+                                QBlock(
+                                    int(i % layer["width"]) * 16,
+                                    int(i / layer["width"]) * 16,
+                                    0
+                                )
+                            )
+                        elif array[i] == 82:
+                            self.entities.append(
+                                QBlock(
+                                    int(i % layer["width"]) * 16,
+                                    int(i / layer["width"]) * 16,
+                                    1
+                                )
+                            )
+
+                if layer["name"] == "rectangles":
+                    for rectangle in layer["objects"]:
+                        self.entities.append(
+                            Block(
+                                int(rectangle["x"]),
+                                int(rectangle["y"]),
+                                int(rectangle["width"]),
+                                int(rectangle["height"])
+                            )
+                        )
+
+    def update(self, delta_time):
+        super(Boss, self).update(delta_time)
+
+        if isinstance(self.actor, Player) and self.actor.restart:
+            pass
+
+        if self.actor.x > self.scene_bounds.width:
+            pass
+
+    def draw(self, surface):
+        self.background_layers[0].draw(surface, CameraType.STATIC)
+        self.sprite_layer.draw(surface, CameraType.DYNAMIC)
+
+        if globals.debugging:
+            for t in self.triggers:
+                t.draw(surface, CameraType.DYNAMIC)
+
+        self.query_result = self.entity_quad_tree.query(
+            self.camera_viewport.bounds)
+        for e in self.query_result:
+            e.draw(surface)
+
+        self.query_result = self.kinetic_quad_tree.query(
+            self.camera_viewport.bounds)
+        for e in self.query_result:
+            if not isinstance(e, Actor):
+                e.draw(surface)
+
+        if self.actor != None:
+            self.actor.draw(surface)
