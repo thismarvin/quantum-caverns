@@ -385,7 +385,7 @@ class Crab(Kinetic):
     def __init__(self, x, y):
         super(Crab, self).__init__(x, y, 11, 9, 25)
         self.sprite = Sprite(self.x - 18, self.y - 19, SpriteType.CRAB)
-        self.walk_animation = Animation(3, 3, 150)
+        self.walk_animation = Animation(4, 4, 150)
         self.direction = Direction.RIGHT
         self.area = None
         self.query_result = None
