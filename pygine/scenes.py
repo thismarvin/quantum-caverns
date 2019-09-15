@@ -340,6 +340,8 @@ class Title(Scene):
         self.setup(False)
         self.song = "engraver.wav"
 
+        self.cool = Layer(2, False, False)
+
     def _reset(self):
         self.set_scene_bounds(
             Rect(0, 0, Camera.BOUNDS.width, Camera.BOUNDS.height))
@@ -377,6 +379,10 @@ class Title(Scene):
     def update(self, delta_time):
         super(Title, self).update(delta_time)
         play_song(self.song)
+
+    def draw(self, surface):
+        super(Title, self).draw(surface)
+        self.cool.draw(surface, CameraType.STATIC)
 
 class Menu(Scene):
     def __init__(self):
