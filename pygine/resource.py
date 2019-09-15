@@ -89,12 +89,15 @@ class SpriteType(IntEnum):
     CRAB_BOSS_EMOTE_MAD = 11
     CRAB_BOSS_EMOTE_THIRSTY = 12
     CRAB_BOSS_EMOTE_SLEEPY = 13
-    CRAB_FACE = 14
+    CRAB_FACE_SLEEPING = 14    
+    CRAB_FACE_HURT = 15
+    CRAB_FACE_HAPPY = 16
+    CRAB_FACE_INJURED = 17
 
-    FALLING_ROCK_BIG = 15
-    FALLING_ROCK_SMALL = 16
+    FALLING_ROCK_BIG = 18
+    FALLING_ROCK_SMALL = 19
 
-    TITLE = 17
+    TITLE = 20
 
 
 class Sprite(PygineObject):
@@ -195,9 +198,21 @@ class Sprite(PygineObject):
             self.part_of_boss = True
             self.__sprite_setup(160, 112, 80, 48)
 
-        elif (self.type == SpriteType.CRAB_FACE):
+        elif (self.type == SpriteType.CRAB_FACE_SLEEPING):
             self.part_of_boss = True
             self.__sprite_setup(0, 192, 64, 32)
+
+        elif (self.type == SpriteType.CRAB_FACE_HURT):
+            self.part_of_boss = True
+            self.__sprite_setup(64, 192, 64, 32)
+
+        elif (self.type == SpriteType.CRAB_FACE_HAPPY):
+            self.part_of_boss = True
+            self.__sprite_setup(128, 192, 64, 32)
+
+        elif (self.type == SpriteType.CRAB_FACE_INJURED):
+            self.part_of_boss = True
+            self.__sprite_setup(192, 192, 64, 32)
 
         elif (self.type == SpriteType.TITLE):
             self.__sprite_setup(0, 0, 64, 32)

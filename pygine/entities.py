@@ -588,14 +588,11 @@ class Crab(Kinetic):
 
 class BossCrab(Entity):
     def __init__(self):
-        super(BossCrab, self).__init__(96, 128, 128, 48)
+        super(BossCrab, self).__init__(96, 128, 128, 8)
         self.body = Sprite(self.x - 64, self.y - 32, SpriteType.CRAB_BOSS_BODY)    
         self.bandaid = Sprite(self.x + 2 * 16, self.y - 1 * 16, SpriteType.CRAB_BOSS_BANDAID)
-        self.face = Sprite(self.x + 2 * 16, self.y + 2 * 16, SpriteType.CRAB_FACE)
-        self.emote = Sprite(self.x + 5 * 16, self.y - 2 * 16, SpriteType.CRAB_BOSS_EMOTE_SLEEPY)
-        self.left_claw = Sprite(self.x - 16, self.y + 6, SpriteType.CRAB_BOSS_ARM)
-        self.right_claw = Sprite(self.x + 5 * 16, self.y + 6, SpriteType.CRAB_BOSS_ARM)
-        self.right_claw.flip_horizontally(True)
+        self.face = Sprite(self.x + 2 * 16, self.y + 2 * 16, SpriteType.CRAB_FACE_SLEEPING)
+        self.emote = Sprite(self.x + 5 * 16, self.y - 2 * 16, SpriteType.CRAB_BOSS_EMOTE_SLEEPY)                            
 
         self.state_index = 0
         self.total_flashes = 3
@@ -604,17 +601,22 @@ class BossCrab(Entity):
         self.invinsibility_flash_timer = Timer(self.flash_duration)
         self.hurt = False
         self.flashing = False
+        self.injured = False
 
     def bop_on_head(self):
         if not self.hurt:            
             self.state_index += 1
             self.hurt = True
             self.invinsibility_flash_timer.start()
+                
+            if self.state_index < 5:
+                self.face.set_sprite(SpriteType.CRAB_FACE_HURT)
+                self.emote.set_sprite(SpriteType.CRAB_BOSS_EMOTE_MAD)        
 
-            if self.state_index == 1 or self.state_index == 5:
-                self.face.increment_sprite_x(64)
+    def __update_ai(self, delta_time, scene_data):
+        pass                   
 
-    def __update_ai(self, delta_time):
+    def __update_health(self, delta_time):
         if self.hurt:
             self.invinsibility_flash_timer.update(delta_time)
 
@@ -629,26 +631,26 @@ class BossCrab(Entity):
 
                     if self.state_index == 1:
                         self.state_index += 1
-                        self.face.increment_sprite_x(64)
+                    if self.state_index < 5:
+                        self.face.set_sprite(SpriteType.CRAB_FACE_HAPPY)
+                        self.emote.set_sprite(SpriteType.NONE)
 
                 self.invinsibility_flash_timer.reset()
                 self.invinsibility_flash_timer.start()
 
-    def __update_emote(self):
-        if self.state_index == 1:
-            self.emote.set_sprite(SpriteType.CRAB_BOSS_EMOTE_MAD)
-        elif self.state_index >= 5:
+    def __update_expression(self):
+        if self.state_index >= 5:
             self.emote.set_sprite(SpriteType.CRAB_BOSS_EMOTE_THIRSTY)
-        else:
-            self.emote.set_sprite(SpriteType.NONE)
+            self.face.set_sprite(SpriteType.CRAB_FACE_INJURED)
+            self.injured = True
 
     def update(self, delta_time, scene_data):
-        self.__update_ai(delta_time)
-        self.__update_emote()
+        self.__update_ai(delta_time, scene_data)
+        self.__update_health(delta_time)
+        self.__update_expression()
 
     def draw(self, surface):
-        if globals.debugging:
-            #self.sprite.draw(surface, CameraType.DYNAMIC)
+        if globals.debugging:            
             draw_rectangle(surface, self.bounds,
                            CameraType.DYNAMIC, self.color, 4)
         else:
@@ -656,10 +658,102 @@ class BossCrab(Entity):
                 self.body.draw(surface, CameraType.STATIC)
                 self.bandaid.draw(surface, CameraType.STATIC)
                 self.face.draw(surface, CameraType.STATIC)
-                self.emote.draw(surface, CameraType.STATIC)
-                self.left_claw.draw(surface, CameraType.STATIC)
-                self.right_claw.draw(surface, CameraType.STATIC)            
+                self.emote.draw(surface, CameraType.STATIC)              
 
+
+class Claw(Kinetic):
+    def __init__(self, boss, is_left):
+        super(Claw, self).__init__(96, 128, 56, 74, 200)
+        self.boss = boss
+        self.is_left = is_left
+
+        self.sprite = Sprite(self.x, self.y, SpriteType.CRAB_BOSS_ARM)
+
+        if self.is_left:            
+            self.set_location(self.x - 16, self.y + 6)
+        else:            
+            self.sprite.flip_horizontally(True)
+            self.set_location(self.x + 5 * 16, self.y + 6)        
+
+        self.initial_y = self.sprite.y
+        self.windup = False
+        self.slamming = False
+        self.cooldown = False
+
+    def set_location(self, x, y):
+        super(Claw, self).set_location(x, y)
+        if self.is_left:
+            self.sprite.set_location(self.x, self.y)
+        else:
+            self.sprite.set_location(self.x, self.y)
+
+    def _apply_force(self, delta_time):
+        pass
+
+    def _update_collision_rectangles(self):
+        self.collision_width = 3
+        self.collision_rectangles = [
+            Rect(self.x + 2, self.y - self.collision_width * 2,
+                 self.width - 4, self.collision_width * 2),
+            Rect(self.x + 2, self.y + self.height,
+                 self.width - 4, self.collision_width * 2),
+            Rect(self.x - self.collision_width, self.y + self.collision_width,
+                 self.collision_width, self.height - self.collision_width * 2),
+            Rect(self.x + self.width, self.y + self.collision_width,
+                 self.collision_width, self.height - self.collision_width * 2)
+        ]
+
+    def _collision(self, scene_data):
+        pass
+
+    def __update_ai(self, delta_time, scene_data):
+        if self.boss.injured:
+            return
+
+        if (
+            not self.boss.hurt and
+            not self.slamming and
+            not self.cooldown and
+            scene_data.actor.y > self.initial_y and
+            scene_data.actor.x >= self.x and 
+            scene_data.actor.x <= self.x + self.width
+            ):
+            self.windup = True            
+
+        if self.windup:
+            if self.y > self.initial_y - 40:
+                self.set_location(self.x, self.y - self.move_speed * 0.4) 
+            else:
+                self.slamming = True
+                self.windup = False
+
+        if self.slamming:
+            if self.y + self.height < scene_data.scene_bounds.height - 8:
+                self.set_location(self.x, self.y + self.move_speed * 3) 
+            else:
+                self.cooldown = True
+                self.slamming = False
+
+        if self.cooldown:
+            if self.y > self.initial_y:
+                self.set_location(self.x, self.y - self.move_speed * 0.07) 
+            else:
+                self.cooldown = False
+
+    def update(self, delta_time, scene_data):
+        self._calculate_scaled_speed(delta_time)
+        self._apply_force(delta_time)
+        self._update_collision_rectangles()
+        self._collision(scene_data)
+        self.__update_ai(delta_time, scene_data)
+
+    def draw(self, surface):
+        if globals.debugging:
+            self._draw_collision_rectangles(surface)
+            draw_rectangle(surface, self.bounds,
+                           CameraType.DYNAMIC, self.color, 4)
+        else:
+            self.sprite.draw(surface, CameraType.STATIC)
 
 
 class Block(Entity):
@@ -707,3 +801,4 @@ class QBlock(Entity):
                            CameraType.DYNAMIC, self.color, 2)
         else:
             self.sprite.draw(surface, CameraType.DYNAMIC)
+

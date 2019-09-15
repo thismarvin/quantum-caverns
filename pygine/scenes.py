@@ -128,15 +128,17 @@ class SceneDataRelay(object):
         self.entity_quad_tree = None
         self.entity_bin = None
         self.kinetic_quad_tree = None
+        self.actor = None
 
     def set_scene_bounds(self, bounds):
         self.scene_bounds = bounds
 
-    def update(self, entites, entity_quad_tree, entity_bin, kinetic_quad_tree):
+    def update(self, entites, entity_quad_tree, entity_bin, kinetic_quad_tree, actor):
         self.entities = entites
         self.entity_quad_tree = entity_quad_tree
         self.entity_bin = entity_bin
         self.kinetic_quad_tree = kinetic_quad_tree
+        self.actor = actor
 
 
 class Scene(object):
@@ -281,7 +283,8 @@ class Scene(object):
             self.entities,
             self.entity_quad_tree,
             self.entity_bin,
-            self.kinetic_quad_tree
+            self.kinetic_quad_tree,
+            self.actor
         )
         self.__update_entities(delta_time)
         self.__update_triggers(delta_time)
@@ -610,9 +613,15 @@ class Boss(Level):
 
         self.shapes = []
 
+        self.boss = BossCrab()    
+        self.left_claw = Claw(self.boss, True)
+        self.right_claw = Claw(self.boss, False)
+
         self.entities = [
             self.actor,
-            BossCrab()
+            self.boss,
+            self.left_claw,
+            self.right_claw
         ]
 
         self.__load_level(0)
@@ -695,11 +704,9 @@ class Boss(Level):
         for e in self.query_result:
             e.draw(surface)
 
-        self.query_result = self.kinetic_quad_tree.query(
-            self.camera_viewport.bounds)
-        for e in self.query_result:
-            if not isinstance(e, Actor):
-                e.draw(surface)
 
-        if self.actor != None:
-            self.actor.draw(surface)
+        self.boss.draw(surface)
+        self.actor.draw(surface)
+        if not self.boss.flashing:
+            self.left_claw.draw(surface)
+            self.right_claw.draw(surface)
