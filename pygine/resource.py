@@ -91,7 +91,10 @@ class SpriteType(IntEnum):
     CRAB_BOSS_EMOTE_SLEEPY = 13
     CRAB_FACE = 14
 
-    TITLE = 15
+    FALLING_ROCK_BIG = 15
+    FALLING_ROCK_SMALL = 16
+
+    TITLE = 17
 
 
 class Sprite(PygineObject):
@@ -162,6 +165,11 @@ class Sprite(PygineObject):
         elif (self.type == SpriteType.CRAB):
             self.__sprite_setup(32, 80, 48, 32)
 
+            
+        elif (self.type == SpriteType.FALLING_ROCK_BIG):
+            self.__sprite_setup(0, 112, 32, 32)
+        elif (self.type == SpriteType.FALLING_ROCK_BIG):
+            self.__sprite_setup(0, 144, 16, 16)
 
         elif (self.type == SpriteType.CRAB_BOSS_BODY):
             self.part_of_boss = True
