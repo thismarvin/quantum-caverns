@@ -12,6 +12,8 @@ SPRITE_SHEET = None
 BOSS_SHEET = None
 TEXT_SHEET = None
 
+HELP_SHEET = None
+
 TOTAL_LEVELS_LOADED = 0
 LAYER_LOOKUP = []
 TOTAL_BOSSES_LOADED = 0
@@ -21,6 +23,7 @@ def load_content():
     global SPRITE_SHEET
     global BOSS_SHEET
     global TEXT_SHEET
+    global HELP_SHEET
 
     path = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,6 +35,10 @@ def load_content():
     ).convert_alpha()
     TEXT_SHEET = pygame.image.load(
         path + "/assets/sprites/font.png"
+    ).convert_alpha()
+
+    HELP_SHEET = pygame.image.load(
+        path + "/assets/sprites/title.png"
     ).convert_alpha()
 
     pygame_is_frustrating()
@@ -104,6 +111,7 @@ class Sprite(PygineObject):
     def __init__(self, x, y, sprite_type=SpriteType.NONE):
         super(Sprite, self).__init__(x, y, 0, 0)
         self.part_of_boss = False
+        self.is_title = False
         self.set_sprite(sprite_type)
 
     def set_sprite(self, sprite_type):
@@ -215,7 +223,8 @@ class Sprite(PygineObject):
             self.__sprite_setup(192, 192, 64, 32)
 
         elif (self.type == SpriteType.TITLE):
-            self.__sprite_setup(0, 0, 64, 32)
+            self.__sprite_setup(0, 0, 320, 240)
+            self.is_title = True
 
         self.__apply_changes_to_sprite()
 
@@ -227,10 +236,13 @@ class Sprite(PygineObject):
             self.image.blit(TEXT_SHEET, (0, 0),
                             (self.__sprite_x, self.__sprite_y, self.width, self.height))
         else:
-            if not self.part_of_boss:
+            if self.is_title:
+                self.image.blit(HELP_SHEET, (0, 0),
+                                (self.__sprite_x, self.__sprite_y, self.width, self.height))
+            elif not self.part_of_boss:
                 self.image.blit(SPRITE_SHEET, (0, 0),
                                 (self.__sprite_x, self.__sprite_y, self.width, self.height))
-            else:
+            elif self.part_of_boss:
                 self.image.blit(BOSS_SHEET, (0, 0),
                                 (self.__sprite_x, self.__sprite_y, self.width, self.height))
 
