@@ -576,6 +576,35 @@ class Crab(Kinetic):
             self.sprite.draw(surface, CameraType.DYNAMIC)
 
 
+class BossCrab(Entity):
+    def __init__(self):
+        super(BossCrab, self).__init__(96, 128, 128, 48)
+        self.body = Sprite(self.x - 64, self.y - 32, SpriteType.CRAB_BOSS_BODY)    
+        self.bandaid = Sprite(self.x + 2 * 16, self.y - 1 * 16, SpriteType.CRAB_BOSS_BANDAID)
+        self.face = Sprite(self.x + 2 * 16, self.y + 2 * 16, SpriteType.CRAB_FACE)
+        self.emote = Sprite(self.x + 5 * 16, self.y - 3 * 16, SpriteType.CRAB_BOSS_EMOTE_SLEEPY)
+        self.left_claw = Sprite(self.x - 16, self.y + 6, SpriteType.CRAB_BOSS_ARM)
+        self.right_claw = Sprite(self.x + 5 * 16, self.y + 6, SpriteType.CRAB_BOSS_ARM)
+        self.right_claw.flip_horizontally(True)
+
+    def update(self, delta_time, scene_data):
+        pass
+
+    def draw(self, surface):
+        if globals.debugging:
+            #self.sprite.draw(surface, CameraType.DYNAMIC)
+            draw_rectangle(surface, self.bounds,
+                           CameraType.DYNAMIC, self.color, 4)
+        else:
+            self.body.draw(surface, CameraType.STATIC)
+            self.bandaid.draw(surface, CameraType.STATIC)
+            self.face.draw(surface, CameraType.STATIC)
+            self.emote.draw(surface, CameraType.STATIC)
+            self.left_claw.draw(surface, CameraType.STATIC)
+            self.right_claw.draw(surface, CameraType.STATIC)            
+
+
+
 class Block(Entity):
     def __init__(self, x, y, width, height):
         super(Block, self).__init__(x, y, width, height)
