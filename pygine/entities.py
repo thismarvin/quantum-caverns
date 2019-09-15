@@ -164,7 +164,6 @@ class Player(Actor):
         self.sprite.set_location(self.x - 10, self.y - 16)
 
     def _apply_force(self, delta_time):
-
         if not self.pause:
             self.velocity.y += self.gravity
         else:
@@ -611,6 +610,9 @@ class BossCrab(Entity):
         self.flashing = False
         self.injured = False
 
+        self.crab_smash = False
+        self.special_attack = False
+
     def bop_on_head(self):
         if not self.hurt:            
             self.state_index += 1
@@ -642,6 +644,8 @@ class BossCrab(Entity):
                     if self.state_index < 5:
                         self.face.set_sprite(SpriteType.CRAB_FACE_HAPPY)
                         self.emote.set_sprite(SpriteType.NONE)
+
+                    self.crab_smash = True
 
                 self.invinsibility_flash_timer.reset()
                 self.invinsibility_flash_timer.start()
@@ -687,13 +691,11 @@ class Claw(Kinetic):
         self.windup = False
         self.slamming = False
         self.cooldown = False
+        self.needs_setup = True
 
     def set_location(self, x, y):
         super(Claw, self).set_location(x, y)
-        if self.is_left:
-            self.sprite.set_location(self.x, self.y)
-        else:
-            self.sprite.set_location(self.x, self.y)
+        self.sprite.set_location(self.x, self.y)
 
     def _apply_force(self, delta_time):
         pass
@@ -721,6 +723,23 @@ class Claw(Kinetic):
 
     def __update_ai(self, delta_time, scene_data):
         if self.boss.injured:
+            return
+
+        if self.boss.crab_smash:
+            if self.needs_setup:
+                if self.y > self.initial_y - 40:
+                    self.set_location(self.x, self.y - self.move_speed * 1.25) 
+                else:
+                    self.needs_setup = False
+
+            else:
+                if self.y + self.height < scene_data.scene_bounds.height - 8:
+                    self.set_location(self.x, self.y + self.move_speed * 4) 
+                else:
+                    self.needs_setup = True
+                    self.cooldown = True
+                    self.boss.special_attack = True
+
             return
 
         if (
@@ -767,6 +786,80 @@ class Claw(Kinetic):
                            CameraType.DYNAMIC, self.color, 4)
         else:
             self.sprite.draw(surface, CameraType.STATIC)
+
+
+class Boulder(Kinetic):
+    def __init__(self, x, y):
+        super(Boulder, self).__init__(x, y, 0, 0, 0)
+        if randint(1, 10) % 2 == 0:
+            self.sprite = Sprite(self.x, self.y, SpriteType.FALLING_ROCK_BIG)
+            self.radius = 16
+            self.set_width(32)
+            self.set_height(32)
+        else:
+            self.sprite = Sprite(self.x, self.y, SpriteType.FALLING_ROCK_SMALL)
+            self.radius = 8
+            self.set_width(16)
+            self.set_height(16)
+
+        self.center = Vector2(self.x + self.radius, self.y + self.radius)
+        self.default_gravity = 16 * randint(3, 6)
+        self.gravity = 0
+
+        self.circle = Circle(self.center.x, self.center.y, self.radius, Color.GREEN, 2)
+
+    def set_location(self, x, y):
+        super(Boulder, self).set_location(x, y)
+        self.sprite.set_location(self.x, self.y)
+        self.center = Vector2(self.x + self.radius, self.y + self.radius)
+        self.circle.set_location(self.center.x, self.center.y)
+
+    def _calculate_scaled_speed(self, delta_time):
+        super(Boulder, self)._calculate_scaled_speed(delta_time)
+
+        time = 1 / delta_time
+
+        self.gravity = 2 * self.default_gravity / time**2
+
+    def _apply_force(self, delta_time):
+        self.velocity.y += self.gravity
+        self.set_location(self.x + self.velocity.x, self.y + self.velocity.y)
+
+    def _update_collision_rectangles(self):
+        self.collision_width = 3
+        self.collision_rectangles = [
+            Rect(self.x + 2, self.y - self.collision_width * 2,
+                 self.width - 4, self.collision_width * 2),
+            Rect(self.x + 2, self.y + self.height,
+                 self.width - 4, self.collision_width * 2),
+            Rect(self.x - self.collision_width, self.y + self.collision_width,
+                 self.collision_width, self.height - self.collision_width * 2),
+            Rect(self.x + self.width, self.y + self.collision_width,
+                 self.collision_width, self.height - self.collision_width * 2)
+        ]
+
+    def _collision(self, scene_data):
+        if self.y + self.height > scene_data.scene_bounds.height + 64:
+            self.remove = True
+
+        if Vector2.distance_between(scene_data.actor.location, self.center) < self.radius:
+            scene_data.actor.get_yeeted()
+
+    def update(self, delta_time, scene_data):
+        self._calculate_scaled_speed(delta_time)
+        self._apply_force(delta_time)
+        self._update_collision_rectangles()
+        self._collision(scene_data)
+
+    def draw(self, surface):
+        if globals.debugging:
+            draw_rectangle(surface, self.bounds,
+                           CameraType.DYNAMIC, self.color, 4)
+            self.circle.draw(surface, CameraType.DYNAMIC)
+        else:
+            self.sprite.draw(surface, CameraType.DYNAMIC)
+            
+            
 
 
 class Block(Entity):

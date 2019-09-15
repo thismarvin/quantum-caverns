@@ -171,7 +171,7 @@ class Sprite(PygineObject):
             
         elif (self.type == SpriteType.FALLING_ROCK_BIG):
             self.__sprite_setup(0, 112, 32, 32)
-        elif (self.type == SpriteType.FALLING_ROCK_BIG):
+        elif (self.type == SpriteType.FALLING_ROCK_SMALL):
             self.__sprite_setup(0, 144, 16, 16)
 
         elif (self.type == SpriteType.CRAB_BOSS_BODY):

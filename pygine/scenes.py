@@ -260,6 +260,8 @@ class Scene(object):
     def __update_entities(self, delta_time):
         for i in range(len(self.entities)-1, -1, -1):
             self.entities[i].update(delta_time, self.scene_data)
+            if self.entities[i].remove:
+                del self.entities[i]
 
     def __update_triggers(self, delta_time):
         for t in self.triggers:
@@ -628,7 +630,7 @@ class Boss(Scene):
         self.entities = [
             self.boss,
             self.left_claw,
-            self.right_claw
+            self.right_claw,
         ]
 
         if self.actor != None:
@@ -703,7 +705,7 @@ class Boss(Scene):
             self.boss,
             self.left_claw,
             self.right_claw
-        ]
+        ]        
 
         self.actor.pause = True
         self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -128)
@@ -712,8 +714,23 @@ class Boss(Scene):
         self.__load_level(0)     
         self.first_pass = True
 
+    def __create_boulders(self):
+        total = randint(5, 10)
+        for i in range(total):
+            self.entities.append(
+                Boulder(
+                    randint(2, int(self.scene_bounds.width / 16) - 2) * 16,
+                    -48
+                    )
+                )            
+
     def update(self, delta_time):
         super(Boss, self).update(delta_time)
+
+        if self.boss.special_attack:
+            self.boss.special_attack = False
+            self.boss.crab_smash = False
+            self.__create_boulders()
 
         if self.actor.grounded and self.actor.pause:
             self.actor.pause = False
@@ -731,8 +748,8 @@ class Boss(Scene):
                self.transition.reset()
                self.start_transition = False
 
-        if self.actor.x > self.scene_bounds.width:
-            pass
+        if self.actor.x + self.actor.width + 4 > self.scene_bounds.width:
+            self.actor.set_location(self.scene_bounds.width - self.actor.width - 4, self.actor.y)
 
     def draw(self, surface):
         self.background_layers[0].draw(surface, CameraType.STATIC)
@@ -746,6 +763,7 @@ class Boss(Scene):
             self.camera_viewport.bounds)
         for e in self.query_result:
             e.draw(surface)
+            
 
         self.boss.draw(surface)
         if not self.actor.attacked:
@@ -753,6 +771,11 @@ class Boss(Scene):
         if not self.boss.flashing:
             self.left_claw.draw(surface)
             self.right_claw.draw(surface)
+
+        for e in self.entities:
+            if isinstance(e, Boulder):
+                e.draw(surface)
+
         if self.actor.attacked:
             self.actor.draw(surface)
 
