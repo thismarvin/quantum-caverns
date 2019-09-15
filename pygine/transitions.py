@@ -121,10 +121,10 @@ class Slide(Transition):
             self.rectangles.append(
                 Rectangle(
                     0,
-                     self.stagger_height * i,
-                      Camera.BOUNDS.width * 2,
-                     self.stagger_height,
-                      Color.BLACK
+                    self.stagger_height * i,
+                    Camera.BOUNDS.width * 2,
+                    self.stagger_height,
+                    Color.BLACK
                 )
             )
 
@@ -142,10 +142,10 @@ class Slide(Transition):
         if self.done:
             return
 
-        if self.rectangle.x + self.rectangle.width > Camera.BOUNDS.width:
+        if self.rectangles[len(self.rectangles) - 1].x + self.rectangle.width > Camera.BOUNDS.width:
             self.first_half_complete = True
 
-        if self.first_half_complete and self.rectangle.x > Camera.BOUNDS.width:
+        if self.first_half_complete and self.rectangles[len(self.rectangles) - 1].x > Camera.BOUNDS.width:
             self.rectangle.set_location(
                 Camera.BOUNDS.width, self.rectangle.y)
             self.done = True
