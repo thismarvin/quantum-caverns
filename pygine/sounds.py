@@ -17,18 +17,18 @@ def load_sound_paths():
     SOUND_PATH = path + '/assets/sounds/'
 
 
-def play_song(filename):
+def play_song(filename, volume=0.75):
     global current_song
     global MUSIC_PATH
     if filename != current_song:
         music.load(MUSIC_PATH + filename)
-        music.set_volume(0.75)
+        music.set_volume(volume)
         music.play(-1)
         current_song = filename
 
 
-def play_sound(filename):
+def play_sound(filename, volume=0.75):
     global SOUND_PATH
     sound = Sound(SOUND_PATH + filename)    
-    sound.set_volume(0.75)
+    sound.set_volume(volume)
     sound.play()
