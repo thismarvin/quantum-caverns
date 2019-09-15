@@ -179,7 +179,7 @@ class Game:
 
         if globals.debugging:
             self.fps_counter.draw(self.window, CameraType.STATIC)
-        self.fps_counter.draw(self.window, CameraType.STATIC)
+        #self.fps_counter.draw(self.window, CameraType.STATIC)
         self.static_camera.draw(self.window)
         pygame.display.update()
 
