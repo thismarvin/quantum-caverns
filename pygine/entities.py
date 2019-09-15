@@ -9,7 +9,7 @@ from pygine.input import InputType, pressed, pressing
 from pygine.maths import Vector2
 from pygine.resource import Animation, Sprite, SpriteType
 from pygine.sounds import play_sound
-from pygine.utilities import CameraType, Color
+from pygine.utilities import CameraType, Color, Timer
 from random import randint
 
 
@@ -294,6 +294,16 @@ class Player(Actor):
                 if e.active:
                     self.__rectanlge_collision_logic(e)
                     self._update_collision_rectangles()
+
+            if isinstance(e, BossCrab):
+                if (
+                    not e.hurt and
+                    not self.grounded and
+                    self.velocity.y > 0 and
+                    self.collision_rectangles[1].colliderect(e.bounds)
+                ):
+                    e.bop_on_head()
+                    self.velocity.y = -self.jump_initial_velocity * 0.35
 
         self.query_result = scene_data.kinetic_quad_tree.query(self.area)
         for e in self.query_result:
@@ -582,13 +592,59 @@ class BossCrab(Entity):
         self.body = Sprite(self.x - 64, self.y - 32, SpriteType.CRAB_BOSS_BODY)    
         self.bandaid = Sprite(self.x + 2 * 16, self.y - 1 * 16, SpriteType.CRAB_BOSS_BANDAID)
         self.face = Sprite(self.x + 2 * 16, self.y + 2 * 16, SpriteType.CRAB_FACE)
-        self.emote = Sprite(self.x + 5 * 16, self.y - 3 * 16, SpriteType.CRAB_BOSS_EMOTE_SLEEPY)
+        self.emote = Sprite(self.x + 5 * 16, self.y - 2 * 16, SpriteType.CRAB_BOSS_EMOTE_SLEEPY)
         self.left_claw = Sprite(self.x - 16, self.y + 6, SpriteType.CRAB_BOSS_ARM)
         self.right_claw = Sprite(self.x + 5 * 16, self.y + 6, SpriteType.CRAB_BOSS_ARM)
         self.right_claw.flip_horizontally(True)
 
+        self.state_index = 0
+        self.total_flashes = 3
+        self.flashes = 0
+        self.flash_duration = 200
+        self.invinsibility_flash_timer = Timer(self.flash_duration)
+        self.hurt = False
+        self.flashing = False
+
+    def bop_on_head(self):
+        if not self.hurt:            
+            self.state_index += 1
+            self.hurt = True
+            self.invinsibility_flash_timer.start()
+
+            if self.state_index == 1 or self.state_index == 5:
+                self.face.increment_sprite_x(64)
+
+    def __update_ai(self, delta_time):
+        if self.hurt:
+            self.invinsibility_flash_timer.update(delta_time)
+
+            if self.invinsibility_flash_timer.done:
+                self.flashes += 1
+                self.flashing = not self.flashing
+
+                if self.flashes >= self.total_flashes * 2:                    
+                    self.hurt = False
+                    self.flashing = False
+                    self.flashes = 0
+
+                    if self.state_index == 1:
+                        self.state_index += 1
+                        self.face.increment_sprite_x(64)
+
+                self.invinsibility_flash_timer.reset()
+                self.invinsibility_flash_timer.start()
+
+    def __update_emote(self):
+        if self.state_index == 1:
+            self.emote.set_sprite(SpriteType.CRAB_BOSS_EMOTE_MAD)
+        elif self.state_index >= 5:
+            self.emote.set_sprite(SpriteType.CRAB_BOSS_EMOTE_THIRSTY)
+        else:
+            self.emote.set_sprite(SpriteType.NONE)
+
     def update(self, delta_time, scene_data):
-        pass
+        self.__update_ai(delta_time)
+        self.__update_emote()
 
     def draw(self, surface):
         if globals.debugging:
@@ -596,12 +652,13 @@ class BossCrab(Entity):
             draw_rectangle(surface, self.bounds,
                            CameraType.DYNAMIC, self.color, 4)
         else:
-            self.body.draw(surface, CameraType.STATIC)
-            self.bandaid.draw(surface, CameraType.STATIC)
-            self.face.draw(surface, CameraType.STATIC)
-            self.emote.draw(surface, CameraType.STATIC)
-            self.left_claw.draw(surface, CameraType.STATIC)
-            self.right_claw.draw(surface, CameraType.STATIC)            
+            if not self.flashing:
+                self.body.draw(surface, CameraType.STATIC)
+                self.bandaid.draw(surface, CameraType.STATIC)
+                self.face.draw(surface, CameraType.STATIC)
+                self.emote.draw(surface, CameraType.STATIC)
+                self.left_claw.draw(surface, CameraType.STATIC)
+                self.right_claw.draw(surface, CameraType.STATIC)            
 
 
 
