@@ -204,8 +204,12 @@ class Sprite(PygineObject):
             self.image.blit(TEXT_SHEET, (0, 0),
                             (self.__sprite_x, self.__sprite_y, self.width, self.height))
         else:
-            self.image.blit(SPRITE_SHEET, (0, 0),
-                            (self.__sprite_x, self.__sprite_y, self.width, self.height))
+            if not self.part_of_boss:
+                self.image.blit(SPRITE_SHEET, (0, 0),
+                                (self.__sprite_x, self.__sprite_y, self.width, self.height))
+            else:
+                self.image.blit(BOSS_SHEET, (0, 0),
+                                (self.__sprite_x, self.__sprite_y, self.width, self.height))
 
     def draw(self, surface, camera_type):
         draw_image(surface, self.image, self.bounds, camera_type)
@@ -280,11 +284,22 @@ class Layer(PygineObject):
             
         else:
             self.image = self.image.convert()
-            self.image.blit(
-                LAYER_LOOKUP[TOTAL_LEVELS_LOADED + self.index],
-                (0, 0),
-                (0, 0, self.width, self.height)
-            )             
+            if str(os.path.dirname(os.path.abspath(__file__)))[:9] == "/home/cpi":
+                panic = 0
+                if self.index == 0:
+                    panic = 1
+
+                self.image.blit(
+                    LAYER_LOOKUP[TOTAL_LEVELS_LOADED + panic],
+                    (0, 0),
+                    (0, 0, self.width, self.height)
+                )          
+            else:
+                self.image.blit(
+                    LAYER_LOOKUP[TOTAL_LEVELS_LOADED + self.index],
+                    (0, 0),
+                    (0, 0, self.width, self.height)
+                )     
 
     def draw(self, surface, camera_type):
         draw_image(surface, self.image, self.bounds, camera_type)
