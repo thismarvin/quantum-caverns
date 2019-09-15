@@ -611,10 +611,13 @@ class Boss(Level):
         self.shapes = []
 
         self.entities = [
-            self.actor
+            self.actor,
+            BossCrab()
         ]
 
         self.__load_level(0)
+
+        self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -64)
 
     def __load_level(self, level):
 
