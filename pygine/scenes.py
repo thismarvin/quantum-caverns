@@ -455,6 +455,7 @@ class Level(Scene):
 
         self.completed = 0
         self.spaghetti = False
+        self.more_spaghetti = False
 
         self.setup(False)
 
@@ -558,11 +559,9 @@ class Level(Scene):
     def update(self, delta_time):
         super(Level, self).update(delta_time)
 
-        if isinstance(self.actor, Player) and self.actor.restart:
+        if not self.start_transition and self.actor.restart:
             self.start_transition = True
-            if self.transition.first_half_complete:
-                self.actor.revive()
-                self.__restart_level()
+            self.spaghetti = True
 
         if not self.start_transition and not self.actor.attacked and self.actor.x > self.scene_bounds.width and not self.queue_boss:  
             self.actor.transitioning = True
@@ -570,7 +569,7 @@ class Level(Scene):
             self.completed += 1
             self.spaghetti = False
 
-            if self.completed < 3:                
+            if self.completed < 5:                
                 self.start_transition = True                
             else:                
                 self.queue_boss = True
@@ -581,13 +580,19 @@ class Level(Scene):
         if self.start_transition:
             self.transition.update(delta_time)
 
-            if self.transition.first_half_complete and not self.spaghetti:
-                self._reset()
-                self.spaghetti = True
+            if self.transition.first_half_complete and not self.more_spaghetti:
+                if not self.spaghetti:
+                    self._reset()
+                else:
+                    self.actor.revive()
+                    self.__restart_level()
+                self.more_spaghetti = True
 
             if self.transition.done:
                self.transition.reset()
                self.start_transition = False
+               self.more_spaghetti = False
+
 
     def draw(self, surface):
         self.background_layers[0].draw(surface, CameraType.STATIC)
