@@ -50,6 +50,9 @@ class SceneManager:
         self.__initialize_scenes()
         self.__set_starting_scene(SceneType.TITLE)
 
+    def I_GIVE_UP(self):
+        self.__reset()
+
     def __add_scene(self, scene):
         self.__all_scenes.append(scene)
         scene.manager = self
@@ -101,6 +104,9 @@ class SceneManager:
 
                 if self.enter_transition.done:
                     self.start_transition = False
+
+                    self.leave_transition.reset()
+                    self.enter_transition.reset()
 
     def update(self, delta_time):
         assert (self.__current_scene != None), \
@@ -328,10 +334,11 @@ class Title(Scene):
     def __init__(self):
         super(Title, self).__init__()
 
+        self.enter_transition_type = TransitionType.PINHOLE_OPEN
         self.leave_transition_type = TransitionType.CAGE_CLOSE
 
         self.setup(False)
-        self.song = ""
+        self.song = "engraver.wav"
 
     def _reset(self):
         self.set_scene_bounds(
@@ -367,12 +374,15 @@ class Title(Scene):
             )
         ]
 
+    def update(self, delta_time):
+        super(Title, self).update(delta_time)
+        play_song(self.song)
 
 class Menu(Scene):
     def __init__(self):
         super(Menu, self).__init__()
         self.setup(False)
-        self.song = ""
+        self.song = "engraver.wav"
 
     def _reset(self):
         self.set_scene_bounds(
@@ -442,6 +452,9 @@ class Level(Scene):
         self.sprite_layer = None
 
         self.relay_actor(Player(-64 * 16 + 4, -64 * 16))
+
+        self.completed = 0
+        self.spaghetti = False
 
         self.setup(False)
 
@@ -551,21 +564,28 @@ class Level(Scene):
                 self.actor.revive()
                 self.__restart_level()
 
-        if not self.actor.attacked and self.actor.x > self.scene_bounds.width and not self.queue_boss:            
-            #self.actor.set_location(1000, self.actor.y)
-            #self.start_transition = True
-
-            #if self.transition.first_half_complete:
-            #    self._reset()
+        if not self.start_transition and not self.actor.attacked and self.actor.x > self.scene_bounds.width and not self.queue_boss:  
             self.actor.transitioning = True
-            self.queue_boss = True
-            
-            self.manager.get_scene(SceneType.BOSS).relay_actor(self.actor)
-            self.manager.queue_next_scene(SceneType.BOSS)
+            self.actor.set_location(1000, self.actor.y)
+            self.completed += 1
+            self.spaghetti = False
+
+            if self.completed < 3:                
+                self.start_transition = True                
+            else:                
+                self.queue_boss = True
+                
+                self.manager.get_scene(SceneType.BOSS).relay_actor(self.actor)
+                self.manager.queue_next_scene(SceneType.BOSS)
             
         if self.start_transition:
-           self.transition.update(delta_time)
-           if self.transition.done:
+            self.transition.update(delta_time)
+
+            if self.transition.first_half_complete and not self.spaghetti:
+                self._reset()
+                self.spaghetti = True
+
+            if self.transition.done:
                self.transition.reset()
                self.start_transition = False
 
@@ -604,7 +624,7 @@ class Boss(Scene):
     def __init__(self):
         super(Boss, self).__init__()
 
-        self.leave_transition_type = TransitionType.CAGE_CLOSE
+        self.leave_transition_type = TransitionType.PINHOLE_CLOSE
         self.enter_transition_type = TransitionType.CAGE_OPEN    
 
         self.transition = Slide()
@@ -613,12 +633,15 @@ class Boss(Scene):
         self.song = "snore.wav"
         self.queue_song = True
         self.delay = Timer(3000, True)
+        self.glory_delay = Timer(2000)
 
         self.background_layers = [
             Layer(1, False, False),
         ]
 
         self.sprite_layer = None    
+
+        self.closing_transition = Cage(TransitionType.CAGE_CLOSE)
 
         self.setup(False)
 
@@ -737,6 +760,26 @@ class Boss(Scene):
         if self.actor.transitioning == True:
             self.actor.transitioning = False
 
+        if self.boss.injured:
+            if not self.glory_delay.started:
+                self.glory_delay.start()
+            self.glory_delay.update(delta_time)
+
+
+            if self.glory_delay.done:                
+                self.closing_transition.update(delta_time)
+                #self.manager.get_scene(SceneType.TITLE).relay_actor(self.actor)
+                #self.manager.queue_next_scene(SceneType.TITLE)
+                
+                #self.glory_delay.reset()
+
+        if self.closing_transition.done:
+            self.manager.I_GIVE_UP()
+
+
+        if self.actor.transitioning == True:
+            self.actor.transitioning = False
+
         self.delay.update(delta_time)
         if not self.delay.done:
             self.actor.pause = True
@@ -751,6 +794,7 @@ class Boss(Scene):
         if self.boss.special_attack:         
             self.boss.special_attack = False
             self.boss.crab_smash = False
+            self.boss.sync_smash = 0
             self.__create_boulders()
 
         if self.actor.grounded and self.actor.pause:
@@ -801,3 +845,5 @@ class Boss(Scene):
             self.actor.draw(surface)
 
         self.transition.draw(surface)
+
+        self.closing_transition.draw(surface)

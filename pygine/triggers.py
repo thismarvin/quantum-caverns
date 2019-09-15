@@ -70,6 +70,9 @@ class OnButtonPressTrigger(Trigger):
         if pressed(self.button):
             self._queue_next_scene(manager)
 
+            if scene_data.actor != None:
+                self._move_entity_to_next_scene(scene_data.actor, manager)
+
     def draw(self, surface, camera_type):
         draw_rectangle(
             surface,
