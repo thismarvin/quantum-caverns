@@ -898,7 +898,7 @@ class Boulder(Kinetic):
         if self.y + self.height > scene_data.scene_bounds.height + 64:
             self.remove = True
 
-        if Vector2.distance_between(scene_data.actor.location, self.center) < self.radius:
+        if Vector2.distance_between(Vector2(scene_data.actor.x + scene_data.actor.width, scene_data.actor.y + scene_data.actor.height), self.center) < self.radius:
             scene_data.actor.get_yeeted()
 
     def update(self, delta_time, scene_data):
