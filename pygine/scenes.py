@@ -82,6 +82,9 @@ class SceneManager:
         self.start_transition = True
 
     def __change_scenes(self):
+        if self.__current_scene == self.__next_scene:
+            return
+
         self.__current_scene = self.__next_scene
         play_song(self.__current_scene.song)
 
@@ -95,6 +98,9 @@ class SceneManager:
             if self.leave_transition.done:
                 self.enter_transition.update(delta_time)
                 self.__change_scenes()
+
+                if self.enter_transition.done:
+                    self.start_transition = False
 
     def update(self, delta_time):
         assert (self.__current_scene != None), \
@@ -433,7 +439,6 @@ class Level(Scene):
         ]
         self.queue_boss = False
 
-
         self.sprite_layer = None
 
         self.relay_actor(Player(-64 * 16 + 4, -64 * 16))
@@ -473,7 +478,7 @@ class Level(Scene):
 
         self.previous_level = random_level
         self.sprite_layer = Layer(random_level)
-        self.__load_level(random_level)
+        self.__load_level(random_level)        
 
     def __restart_level(self):
         self.entities = [
@@ -482,8 +487,12 @@ class Level(Scene):
         self.__load_level(self.previous_level)
         self.first_pass = True
 
+        play_song(self.song)
+
     def __load_level(self, level):
         path = os.path.dirname(os.path.abspath(__file__))
+
+        self.actor.transitioning = False
 
         with open(path + "/assets/levels/" + str(level) + ".json") as json_file:
             data = json.load(json_file)
@@ -538,23 +547,19 @@ class Level(Scene):
 
         if isinstance(self.actor, Player) and self.actor.restart:
             self.start_transition = True
-
             if self.transition.first_half_complete:
                 self.actor.revive()
                 self.__restart_level()
 
-        if self.actor.x > self.scene_bounds.width and not self.queue_boss:            
+        if not self.actor.attacked and self.actor.x > self.scene_bounds.width and not self.queue_boss:            
             #self.actor.set_location(1000, self.actor.y)
             #self.start_transition = True
 
             #if self.transition.first_half_complete:
             #    self._reset()
-                
+            self.actor.transitioning = True
             self.queue_boss = True
             
-            self.actor.pause = True
-            self.actor.velocity = Vector2(0, 0)
-            self.actor.set_location(self.manager.get_scene(SceneType.BOSS).scene_bounds.width / 2 - self.actor.width / 2, -128)
             self.manager.get_scene(SceneType.BOSS).relay_actor(self.actor)
             self.manager.queue_next_scene(SceneType.BOSS)
             
@@ -605,7 +610,9 @@ class Boss(Scene):
         self.transition = Slide()
         self.start_transition = False
 
-        self.song = "lapidary.wav"
+        self.song = "snore.wav"
+        self.queue_song = True
+        self.delay = Timer(3000, True)
 
         self.background_layers = [
             Layer(1, False, False),
@@ -633,18 +640,13 @@ class Boss(Scene):
             self.right_claw,
         ]
 
-        if self.actor != None:
-            self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -128)
-            self.entities.append(self.actor)
-
         self.__load_level(0)        
 
     def _create_triggers(self):
         self.triggers = []
 
     def __load_level(self, level):
-
-        self.sprite_layer = Layer(level, True, True)
+        self.sprite_layer = Layer(level, True, True)        
 
         path = os.path.dirname(os.path.abspath(__file__))
 
@@ -708,11 +710,16 @@ class Boss(Scene):
         ]        
 
         self.actor.pause = True
-        self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -128)
+        self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -64)
         self.entities.append(self.actor)
         
         self.__load_level(0)     
         self.first_pass = True
+
+        self.queue_song = True
+        self.delay = Timer(1500, True)
+
+        play_song("snore.wav", 0.5)
 
     def __create_boulders(self):
         total = randint(5, 10)
@@ -727,7 +734,21 @@ class Boss(Scene):
     def update(self, delta_time):
         super(Boss, self).update(delta_time)
 
-        if self.boss.special_attack:
+        if self.actor.transitioning == True:
+            self.actor.transitioning = False
+
+        self.delay.update(delta_time)
+        if not self.delay.done:
+            self.actor.pause = True
+            self.actor.velocity = Vector2(0, 0)
+            self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -64)
+        
+        if self.boss.hurt:         
+            if self.queue_song:
+                self.queue_song = False
+                play_song("liocarcinus.wav")
+
+        if self.boss.special_attack:         
             self.boss.special_attack = False
             self.boss.crab_smash = False
             self.__create_boulders()

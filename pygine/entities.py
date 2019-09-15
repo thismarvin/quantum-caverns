@@ -8,7 +8,7 @@ from pygine import globals
 from pygine.input import InputType, pressed, pressing
 from pygine.maths import Vector2
 from pygine.resource import Animation, Sprite, SpriteType
-from pygine.sounds import play_sound
+from pygine.sounds import play_sound, play_song
 from pygine.utilities import CameraType, Color, Timer
 from random import randint
 
@@ -134,6 +134,10 @@ class Player(Actor):
         self.attacked = False
         self.restart = False
         self.pause = False
+        self.transitioning = False
+
+        self.restart_delay = Timer(2600)
+        self.queue_restart = False
 
     def revive(self):
         self.grounded = False
@@ -141,6 +145,8 @@ class Player(Actor):
         self.attempt_block_shift = False
         self.attacked = False
         self.restart = False
+        self.queue_restart = False
+
         self.velocity = Vector2(0, 0)
         self.sprite.set_frame(0, 6)
 
@@ -164,6 +170,10 @@ class Player(Actor):
         self.sprite.set_location(self.x - 10, self.y - 16)
 
     def _apply_force(self, delta_time):
+
+        if self.transitioning:
+            return
+
         if not self.pause:
             self.velocity.y += self.gravity
         else:
@@ -311,6 +321,10 @@ class Player(Actor):
                 ):
                     e.bop_on_head()
                     self.velocity.y = -self.jump_initial_velocity * 0.35
+                    if not e.injured:
+                        play_sound("pain.wav", 0.4)
+                    else:
+                        play_sound("pain.wav", 0.2)
 
         self.query_result = scene_data.kinetic_quad_tree.query(self.area)
         for e in self.query_result:
@@ -330,6 +344,7 @@ class Player(Actor):
                     ):
                         e.squish()
                         self.velocity.y = -self.jump_initial_velocity * 0.35
+                        play_sound("bop.wav")
 
                     elif e.aggravated and self.bounds.colliderect(e.bounds):
                         self.__finessed_by_enemy()
@@ -361,9 +376,27 @@ class Player(Actor):
         self.velocity.y = -self.jump_initial_velocity * 0.5
         self.sprite.set_frame(10, 6)
 
-    def __update_death(self, scene_data):
-        if self.y > scene_data.scene_bounds.height + 64:
-            self.restart = True
+        self.__play_mocking_music()
+
+    def __play_mocking_music(self):
+        if not self.queue_restart:
+            play_song("fin.wav")
+            self.queue_restart = True
+            self.restart_delay.reset()
+            self.restart_delay.start()
+
+    def __update_death(self, delta_time, scene_data):
+        if self.y + self.height > scene_data.scene_bounds.height:
+            self.attacked = True
+            self.__play_mocking_music()
+        #if self.y + self.height > scene_data.scene_bounds.height + 64 + 128 + 64:
+        #    self.restart = True
+
+        if self.queue_restart:
+            self.restart_delay.update(delta_time)
+            if self.restart_delay.done:
+                self.restart = True
+                self.queue_restart = False                
 
     def __update_animation(self, delta_time):
         self.walk_animation.update(delta_time)
@@ -374,7 +407,7 @@ class Player(Actor):
         self._apply_force(delta_time)
         self._update_collision_rectangles()
         self._collision(scene_data)
-        self.__update_death(scene_data)
+        self.__update_death(delta_time, scene_data)
         self.__update_animation(delta_time)
 
     def draw(self, surface):
@@ -739,6 +772,7 @@ class Claw(Kinetic):
                     self.needs_setup = True
                     self.cooldown = True
                     self.boss.special_attack = True
+                    play_sound("stomp.wav", 0.5)
 
             return
 
@@ -754,7 +788,10 @@ class Claw(Kinetic):
 
         if self.windup:
             if self.y > self.initial_y - 40:
-                self.set_location(self.x, self.y - self.move_speed * 0.4) 
+                if self.boss.state_index == 4:
+                    self.set_location(self.x, self.y - self.move_speed * 0.6) 
+                else:
+                    self.set_location(self.x, self.y - self.move_speed * 0.4) 
             else:
                 self.slamming = True
                 self.windup = False
@@ -765,10 +802,14 @@ class Claw(Kinetic):
             else:
                 self.cooldown = True
                 self.slamming = False
+                play_sound("stomp.wav")
 
         if self.cooldown:
             if self.y > self.initial_y:
-                self.set_location(self.x, self.y - self.move_speed * 0.07) 
+                if self.boss.state_index == 4:
+                    self.set_location(self.x, self.y - self.move_speed * 0.15) 
+                else:
+                    self.set_location(self.x, self.y - self.move_speed * 0.07) 
             else:
                 self.cooldown = False
 
