@@ -644,7 +644,10 @@ class BossCrab(Entity):
         self.injured = False
 
         self.crab_smash = False
+        self.sync_smash = 0
         self.special_attack = False
+
+        self.idle_timer = Timer(5000)
 
     def bop_on_head(self):
         if not self.hurt:            
@@ -656,11 +659,18 @@ class BossCrab(Entity):
                 self.face.set_sprite(SpriteType.CRAB_FACE_HURT)
                 self.emote.set_sprite(SpriteType.CRAB_BOSS_EMOTE_MAD)        
 
-    def __update_ai(self, delta_time, scene_data):
-        pass                   
+    def __update_ai(self, delta_time, scene_data):     
+        if self.state_index > 1 and self.state_index < 5:
+            self.idle_timer.start()
+            self.idle_timer.update(delta_time)   
+
+        if self.idle_timer.done:
+            self.crab_smash = True
+            self.idle_timer.reset()
 
     def __update_health(self, delta_time):
         if self.hurt:
+            self.idle_timer.reset()
             self.invinsibility_flash_timer.update(delta_time)
 
             if self.invinsibility_flash_timer.done:
@@ -678,7 +688,7 @@ class BossCrab(Entity):
                         self.face.set_sprite(SpriteType.CRAB_FACE_HAPPY)
                         self.emote.set_sprite(SpriteType.NONE)
 
-                    self.crab_smash = True
+                    self.crab_smash = True                    
 
                 self.invinsibility_flash_timer.reset()
                 self.invinsibility_flash_timer.start()
@@ -764,14 +774,16 @@ class Claw(Kinetic):
                     self.set_location(self.x, self.y - self.move_speed * 1.25) 
                 else:
                     self.needs_setup = False
+                    self.boss.sync_smash += 1
 
-            else:
+            elif self.boss.sync_smash >= 2:
                 if self.y + self.height < scene_data.scene_bounds.height - 8:
                     self.set_location(self.x, self.y + self.move_speed * 4) 
                 else:
                     self.needs_setup = True
                     self.cooldown = True
                     self.boss.special_attack = True
+                    
                     play_sound("stomp.wav", 0.5)
 
             return
@@ -802,7 +814,10 @@ class Claw(Kinetic):
             else:
                 self.cooldown = True
                 self.slamming = False
+
                 play_sound("stomp.wav")
+                self.boss.idle_timer.reset()
+                self.boss.idle_timer.start()
 
         if self.cooldown:
             if self.y > self.initial_y:
