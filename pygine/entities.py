@@ -322,7 +322,7 @@ class Player(Actor):
                         self.collision_rectangles[1].colliderect(e.bounds)
                     ):
                         e.squish()
-                        self.velocity.y = -self.jump_initial_velocity * 0.75
+                        self.velocity.y = -self.jump_initial_velocity * 0.35
 
                     elif e.aggravated and self.bounds.colliderect(e.bounds):
                         self.__finessed_by_enemy()
@@ -425,6 +425,12 @@ class Crab(Kinetic):
             return
 
         self.aggravated = not self.aggravated
+
+    def squish(self):
+        self.dead = True
+        self.velocity.y = -self.jump_initial_velocity * 0.75
+        self.velocity.x = - \
+            self.move_speed if randint(1, 10) % 2 == 0 else self.move_speed
 
     def _calculate_scaled_speed(self, delta_time):
         if self.aggravated:
@@ -537,12 +543,6 @@ class Crab(Kinetic):
             if isinstance(e, Crab):
                 self.__rectanlge_collision_logic(e)
                 self._update_collision_rectangles()
-
-    def squish(self):
-        self.dead = True
-        self.velocity.y = -self.jump_initial_velocity * 1.25
-        self.velocity.x = - \
-            self.move_speed if randint(1, 10) % 2 == 0 else self.move_speed
 
     def __update_ai(self, scene_data):
         if self.dead:
