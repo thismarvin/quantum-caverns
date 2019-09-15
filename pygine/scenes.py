@@ -549,8 +549,13 @@ class Level(Scene):
             #    self._reset()
                 
             self.queue_boss = True
+            
+            self.actor.pause = True
+            self.actor.velocity = Vector2(0, 0)
+            self.actor.set_location(self.manager.get_scene(SceneType.BOSS).scene_bounds.width / 2 - self.actor.width / 2, -128)
+            self.manager.get_scene(SceneType.BOSS).relay_actor(self.actor)
             self.manager.queue_next_scene(SceneType.BOSS)
-
+            
         if self.start_transition:
            self.transition.update(delta_time)
            if self.transition.done:
@@ -588,12 +593,15 @@ class Level(Scene):
                 t.draw(surface, CameraType.DYNAMIC)
 
 
-class Boss(Level):
+class Boss(Scene):
     def __init__(self):
         super(Boss, self).__init__()
 
         self.leave_transition_type = TransitionType.CAGE_CLOSE
         self.enter_transition_type = TransitionType.CAGE_OPEN    
+
+        self.transition = Slide()
+        self.start_transition = False
 
         self.song = "lapidary.wav"
 
@@ -618,15 +626,19 @@ class Boss(Level):
         self.right_claw = Claw(self.boss, False)
 
         self.entities = [
-            self.actor,
             self.boss,
             self.left_claw,
             self.right_claw
         ]
 
-        self.__load_level(0)
+        if self.actor != None:
+            self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -128)
+            self.entities.append(self.actor)
 
-        self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -64)
+        self.__load_level(0)        
+
+    def _create_triggers(self):
+        self.triggers = []
 
     def __load_level(self, level):
 
@@ -682,11 +694,42 @@ class Boss(Level):
                             )
                         )
 
+    def __restart_level(self):        
+        self.boss = BossCrab()    
+        self.left_claw = Claw(self.boss, True)
+        self.right_claw = Claw(self.boss, False)
+
+        self.entities = [
+            self.boss,
+            self.left_claw,
+            self.right_claw
+        ]
+
+        self.actor.pause = True
+        self.actor.set_location(self.scene_bounds.width / 2 - self.actor.width / 2, -128)
+        self.entities.append(self.actor)
+        
+        self.__load_level(0)     
+        self.first_pass = True
+
     def update(self, delta_time):
         super(Boss, self).update(delta_time)
 
+        if self.actor.grounded and self.actor.pause:
+            self.actor.pause = False
+
         if isinstance(self.actor, Player) and self.actor.restart:
-            pass
+            self.start_transition = True
+
+            if self.transition.first_half_complete:
+                self.actor.revive()
+                self.__restart_level()
+
+        if self.start_transition:
+           self.transition.update(delta_time)
+           if self.transition.done:
+               self.transition.reset()
+               self.start_transition = False
 
         if self.actor.x > self.scene_bounds.width:
             pass
@@ -704,9 +747,13 @@ class Boss(Level):
         for e in self.query_result:
             e.draw(surface)
 
-
         self.boss.draw(surface)
-        self.actor.draw(surface)
+        if not self.actor.attacked:
+            self.actor.draw(surface)
         if not self.boss.flashing:
             self.left_claw.draw(surface)
             self.right_claw.draw(surface)
+        if self.actor.attacked:
+            self.actor.draw(surface)
+
+        self.transition.draw(surface)

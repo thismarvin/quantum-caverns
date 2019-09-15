@@ -133,6 +133,7 @@ class Player(Actor):
         self.attempt_block_shift = False
         self.attacked = False
         self.restart = False
+        self.pause = False
 
     def revive(self):
         self.grounded = False
@@ -142,6 +143,9 @@ class Player(Actor):
         self.restart = False
         self.velocity = Vector2(0, 0)
         self.sprite.set_frame(0, 6)
+
+    def get_yeeted(self):
+        self.__finessed_by_enemy()
 
     def _calculate_scaled_speed(self, delta_time):
         super(Player, self)._calculate_scaled_speed(delta_time)
@@ -160,7 +164,11 @@ class Player(Actor):
         self.sprite.set_location(self.x - 10, self.y - 16)
 
     def _apply_force(self, delta_time):
-        self.velocity.y += self.gravity
+
+        if not self.pause:
+            self.velocity.y += self.gravity
+        else:
+            self.velocity.y += self.gravity * 0.6
 
         self.set_location(self.x + self.velocity.x, self.y + self.velocity.y)
 
@@ -168,7 +176,7 @@ class Player(Actor):
         if self.attacked:
             return
 
-        if pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
+        if not self.pause and pressing(InputType.LEFT) and not pressing(InputType.RIGHT):
             self.velocity.x -= self.lateral_acceleration
             if self.velocity.x < -self.move_speed:
                 self.velocity.x = -self.move_speed
@@ -178,7 +186,7 @@ class Player(Actor):
 
             self.direction = Direction.LEFT
 
-        elif pressing(InputType.RIGHT) and not pressing(InputType.LEFT):
+        elif not self.pause and pressing(InputType.RIGHT) and not pressing(InputType.LEFT):
             self.velocity.x += self.lateral_acceleration
             if self.velocity.x > self.move_speed:
                 self.velocity.x = self.move_speed
@@ -704,7 +712,12 @@ class Claw(Kinetic):
         ]
 
     def _collision(self, scene_data):
-        pass
+        if (
+            self.slamming and
+             not scene_data.actor.attacked and
+              scene_data.actor.bounds.colliderect(self.bounds)
+              ):
+            scene_data.actor.get_yeeted()
 
     def __update_ai(self, delta_time, scene_data):
         if self.boss.injured:
