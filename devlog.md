@@ -46,7 +46,7 @@ We can check if all this is correct by graphing out our acceleration, velocity, 
 ![find_methods|630x500](upload://mqhgW8X4bia99JVUA1V9Re39h2.png)
 Now we can visualze these functions and see if manipulating jump height and jump duration works as intended.
 
-![final_physics|690x431,100%](upload://Ak78ugY2mfNcMlOMYMDrGmmqnd6.gif)
+![final_physics|690x431,100%](https://github.com/thismarvin/quantum-caverns/blob/feature-devlog/devlog_assets/final_physics.gif)
 (The sliders j and d represent jump height and jump duration respectively).
 
 Well looks like everything works! Here is what our final code looks like.
