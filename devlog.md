@@ -25,10 +25,10 @@ This is great, but what if we want to have more control of our jump code. For ex
 
 First we can solve for gravity by using this kinematic equation for a free falling object.
 
-![find_gravity|690x393,75%](upload://sauLGMcOX5t6V0BiFZ1GJCkLKiv.png)
+![find_gravity|690x393,75%](https://github.com/thismarvin/quantum-caverns/blob/feature-devlog/devlog_assets/find_gravity.png)
 
 Now that we found gravity we can use another kinematic equation to find what the initial jump velocity should be.
-![find_jump_velocity|690x264,75%](upload://wfbKkiEFV6hsa7yoYQvFOYYdJhV.png)
+![find_jump_velocity|690x264,75%](https://github.com/thismarvin/quantum-caverns/blob/feature-devlog/devlog_assets/find_jump_velocity.png)
 That wasn't too bad. Here is what our new initialize method looks like.
 
 ```python
@@ -43,10 +43,10 @@ def initialize():
 ```
 
 We can check if all this is correct by graphing out our acceleration, velocity, and position functions. We can do some quick calculus to find these functions given a constant acceleration.
-![find_methods|630x500](upload://mqhgW8X4bia99JVUA1V9Re39h2.png)
+![find_methods|630x500](https://github.com/thismarvin/quantum-caverns/blob/feature-devlog/devlog_assets/find_methods.png)
 Now we can visualze these functions and see if manipulating jump height and jump duration works as intended.
 
-![final_physics|690x431,100%](https://github.com/thismarvin/quantum-caverns/blob/feature-devlog/devlog_assets/final_physics.gif)
+![final_physics|690x431](https://github.com/thismarvin/quantum-caverns/blob/feature-devlog/devlog_assets/final_physics.gif)
 (The sliders j and d represent jump height and jump duration respectively).
 
 Well looks like everything works! Here is what our final code looks like.
